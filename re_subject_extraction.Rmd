@@ -1,0 +1,808 @@
+---
+title: "re_subject_extraction"
+author: "Hsiao"
+date: "8/2/2021"
+output: html_document
+---
+
+
+```{r}
+library("foreign")
+library("data.table") 
+library("magrittr")
+library("naniar")
+library("plyr")
+library("dplyr")
+library("stringr")
+library("ggplot2")
+library("tidyr")
+library("tibble")
+
+
+```
+
+
+```{r}
+# 1989 
+library(data.table)
+
+data = load("/Users/Ano/Desktop/HRS_Chao/data_merge.RData")
+# there are dataframes, now turn into datatable
+#elder03 = data.table(df_c_03_ELDER)
+# x <-elder03[sex ==1 & mail ==1,]
+# elder03[order(sex, -mail)]
+# x<- elder03[,list(sex,mail)] # use list to ensure datatable type is preserved 
+#rename the column :elder03[,list( sexsex =sex, mailmail =mail)]
+# head(x)
+
+# General form of datatable : DT[i, j, by] representating row, column, group by
+
+```
+
+```{r}
+dt_89 <- data.table(df_c_89)
+# 89年抓education, age, ethnicty 而已
+
+df_89 <- dt_89[, "survey_year":= 1989] 
+demo_89 <- dt_89[ , c("qtype", "ser_no", "survey_year","rsex", "rage","reduc","ethnicty","marstat")]
+demo_89[, qser_no := paste0(qtype, ser_no)][, birthyear := survey_year -1911 - rage]
+
+```
+
+
+```{r}
+# 1993 年
+
+dt_93 <- data.table(df_c_93)
+dt_93 <- dt_93[, "survey_year":= 1993]
+dt_93 <- dt_93[, "marstat":= NA] # 結婚狀況=出現在codebook 但沒有檔案= = 
+dt_93 <- dt_93[, "rsex":= NA]
+dt_93 <- dt_93[, "rage":= NA]
+dt_93 <- dt_93[, "dwell2":= NA] # 城市還是郊區
+dt_93 <- dt_93[, "reduc":= NA]
+dt_93 <- dt_93[, "ethnicty":= NA]
+dt_93 <- dt_93[, "frqsport":= NA]
+dt_93<- dt_93[, "birthyear":=NA]
+
+
+d2<- read.spss("/Users/Ano/Desktop/HRS_Chao/ELDATA/ELDATA93/SPSS/t93back.sav", to.data.frame=TRUE)
+names(d2) <- tolower(names(d2))
+
+
+
+demo_dt_93 <- dt_93[,c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell93","dwell2","reduc","ethnicty","marstat","b6child","b7","c53","curwork","c25b1","c25c1","c43","c44","c46","frqsport"),]
+
+#888 ==0
+
+demo_dt_93<- setNames(demo_dt_93, c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+#Demogrphy:
+
+#adls
+iadl_dt_93 <- dt_93[,c("c411","c412","c414","c415","c416","c417","c418"), ]
+adl_dt_93<-dt_93[, c("c419","c4110","c4111","c4112","c4113","c4114")]
+phy_dt_93 <- dt_93[, c("c421","c422","c423","c424","c425","c426","c413")]
+
+# need data for get help ???
+
+adls_dt_93<- cbind(phy_dt_93, adl_dt_93, iadl_dt_93)
+
+phys_93 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+adls_93 <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+iadl_93 <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+names<- append(phys_93,adls_93)
+names <- append(names,iadl_93)
+adls_dt_93<- setNames(adls_dt_93, names)
+
+# diseases
+
+dt_93 <- dt_93[, "headspine":= NA]
+dt_93 <- dt_93[, "spur":= NA]
+dis_dt_93 <- dt_93[,c("c1","c2","c3","c4","c5","c6","c8", "c11_7a","c10","c11_1a","c11_2a","c11_11a","c11_8a","c11_10a","c11_5a","spur","c7b7","c7","c7b6","c11_13a"),]
+
+dis_93 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","catar","glau","tbc","kiddi","gout","anem","spur","hipbone","brokenbone","headspine","prost")
+dis_dt_93<- setNames(dis_dt_93, dis_93)
+
+dt_93<- cbind(demo_dt_93,adls_dt_93,dis_dt_93)
+head(dt_93)
+
+# 用1989年的資料對回去
+dt_93[, qser_no := paste0(qtype, ser_no)]
+alive<- unique( intersect(demo_89$qser_no, dt_93$qser_no))
+demo<- demo_89[ qser_no %in% alive][, c("birthyear", "reduc", "ethnicty", "rsex", "qser_no")]
+
+dt_93<- demo[dt_93 , on= "qser_no"]
+dt_93[, grep("^i.", colnames(dt_93)) :=NULL ][, rage:= survey_year - birthyear - 1911 ]
+
+d2<- as.data.table(d2)
+d2[, marstat:= 0][, marstat:= ifelse(d2$a1bcursp == 8, 1, 0)][, qser_no:= paste0(d2$qtype, d2$ser_no)] # 0是沒有伴侶
+d2<- d2[ , c('qser_no', 'marstat')]
+dt_93 <- d2[dt_93, on='qser_no']
+dt_93[, i.marstat:= NULL]
+
+```
+
+
+```{r}
+
+# 1996 
+dt_96_o <- data.table(df_c_96_ELDER)
+dt_96_o <- dt_96_o[, "survey_year":=1996]
+dt_96_o <- dt_96_o[,"reduc" := NA]
+dt_96_o <- dt_96_o[,"ethnicty" := NA]
+
+# old : 
+# Demo
+
+demo_96_o <-c("qtype","ser_no","survey_year","f0103","f0104","prt1","crt2","f0101","f0102","reduc","ethnicty","f02a3","f04b1","f04b15","f05c1","f11e1","f06c9b","f06c9c","f08c211","f08c221")
+demo_dt_96_o <- dt_96_o[,c("qtype","ser_no","survey_year","f0103","f0104","crt1","crt2","f0101","f0102","reduc","ethnicty","f02a3","f04b1","f04b15","f05c1","f11e1","f06c9b","f06c9c","f08c201","f08c211","f08c221","f08c23a"),]
+
+
+demo_dt_96_o<- setNames(demo_dt_96_o, c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+
+# 103 as rsex
+# 104 as rage
+# 101 as dwell
+# 102 as dwell2 : 都市、鎮上鄉間的街上、鄉村
+# lack of reduc -> fill with NAs
+# lack of ethnicity -> fill with NAs
+# f02a3 marstat now
+# f04b1 nchldrn
+# f04b15 ntothh
+# f05c1 hlgenrat
+# f11e1 rwstat
+# f16k1 othpres
+# f06c9b nomihosp in days
+# f06c9c hosphp1
+# f08c211 curdrink
+# f08c221 curchew
+
+# omit rhead, height, weight, rlastocc(?),
+
+# f08c201 smoke
+# f08c23a sport
+# congntive ??? 
+
+#--------------------
+# Adls
+phy_dt_96_o <- dt_96_o[,309:315,]
+# phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
+
+adls_dt_96_o <- dt_96_o[,c("f07c17", "f07c181a","f07c182a","f07c183a","f07c184a","f07c185a","f07c186a")]
+# f07c17 general need help 3most serious
+# 181 bath
+# 182 clothes
+# 183 dine
+# 184 wake up 
+# 185 walk inside
+# 186 WC
+
+iadl_dt_96_o <- dt_96_o[,348:354, ]
+
+# need data for get help ???
+
+adls_dt_96_o <- cbind(phy_dt_96_o, adls_dt_96_o, iadl_dt_96_o)
+
+phys_96 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+adls_96 <- c("general","bath","clothes","dine","wakeup","walk_indoor","WC")
+iadl_96 <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+names<- append(phys_96,adls_96)
+names <- append(names,iadl_96)
+adls_dt_96_o<- setNames(adls_dt_96_o, names)
+
+# diseases
+
+dis_dt_96_o <- dt_96_o[,c("f05c41","f05c42","f05c43","f05c44","f05c45","f05c46","f05c47", "f05c48","f05c49","f06c5a","f06c5b","f06c5c","f06c5d","f06c5e","f06c5f","f06c5g","f06c5h","f06c5i","f06c5j","f06c5k"),]
+
+#dis_dt_96_o<- rename(dis_dt_96_o, c("f05c41" = "hibp", "f05c42"="diab","f05c43"="hrtpr", "f05c44"="strok", "f05c45"="cancer","f05c46"="broh","f05c47"="arth","f05c48"="ulcer","f05c49"="livpr","f06c5a"="catar","f06c5b"="glau","f06c5c"="tbc","f06c5d"="kiddi","f06c5e"="gout","f06c5f"="anem","f06c5g"="spur","f06c5h"="hipbone","f06c5i"="brokenbone","f06c5j"="headspine","f06c5k"="prost"))
+
+dis_96 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","catar","glau","tbc","kiddi","gout","anem","spur","hipbone","brokenbone","headspine","prost")
+dis_dt_96_o<- setNames(dis_dt_96_o, dis_96)
+
+# spur = 骨刺(bone spur)
+# arth = 關節炎(arthritis)
+# catar = 白內障(cataract)
+# glau = 青光眼(glaucoma)
+# oteye = 其他眼疾
+# asth = 氣喘(asthma)
+# hibp = 高血壓(high blood pressure)
+# hrtpr = 心臟問題( heart trouble)
+# strok = 中風(stroke)
+# cirpr = 血液循環不良(circulation problem)
+# diab = 糖尿病(diabetes)
+# thydi = 甲狀腺疾病(thyroid disease)
+# hibc = 血油質高 (high blood ??)
+# anem = 貧血(anemia)
+# livpr = 肝膽疾病(liver, gallbladder)
+# const = 便秘與痔瘡(constipation)
+# ulcer = 胃潰瘍(ulcer)
+# kiddi = 腎臟疾病(kidney)
+# prost = 前列腺疾病(prostate)
+# oturi = 其他泌尿科問題( other urine)
+# skdis = 皮膚疾病( skin disease)
+# neur = 腦神經問題(neuro)
+# dizz = 暈眩(dizz)
+# faint = 昏倒(faint)
+# buzz = 耳鳴(buzz)
+# brokbone = 骨折(broken bone)
+
+#*belows are missing in 89
+# cancer = 癌症(cancer) 
+# broh = 支氣管炎(bronchitis) # !!replaceasth to broh
+# tbc = 肺結核(tuberculosis)
+# gout = 痛風(.)
+# hipbone = 髖骨骨折( broken hipbone) ##老人嚴重死因之一
+# headspine = 頭與脊椎外傷
+
+
+dt_96_o <- cbind(demo_dt_96_o,adls_dt_96_o,dis_dt_96_o)
+dt_96_o <- dt_96_o[,"birthyear" := survey_year - rage][, qser_no := paste0(qtype, ser_no)]
+
+for (i in colnames(dt_96_o)){
+  if( length(grep(i, colnames(dt_93)))!=0){next}
+  else{print(i)}
+}
+
+d1 <- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD89_99/Data/bkgrdall_v2.sav", to.data.frame=TRUE)
+# find age
+d1<-as.data.table(d1)
+d1[, birthyear:= 1996 - 1911 - d1$AGE96][, qser_no := paste0(QTYPE, SER_NO)]
+alive_96_old <- d1[qser_no %in% dt_96_o$qser_no]
+alive_96_old<- alive_96_old[, c("EDUC","ETHC", "qser_no")]
+setnames(alive_96_old, c("EDUC", "ETHC"), c("educ", "ethnicty"))
+dt_96_o<- alive_96_old[dt_96_o, on="qser_no"]
+dt_96_o[, reduc := dt_96_o$educ][, c("i.ethnicty", "educ") :=NULL]
+
+# 96年多了一個general （總合來說你覺的你今年的身體狀態如何）
+```
+
+
+```{r}          
+
+
+dt_96_y <- data.table(df_c_96_YOUTH)
+dt_96_y <- dt_96_y[, "survey_year":=1996]
+
+#Demo_96_y:
+demo_96_y <- c("qtype","ser_no","survey_year","f0103","crt1","crt2","f0101","f0102","f02a2","f02a5","f02a10","f04b1","f04b4","f05c3","f11e1","f11e2b","f06c9b","f06c9c","f08c201","f08c21","f08c22")
+
+demo_dt_96_y <- dt_96_y[,c("qtype","ser_no","survey_year","f0103","crt1","crt2","f0101","f0102","f02a2","f02a5","f02a10","f04b1","f04b4","f05c3","f11e1","f06c9b","f06c9c","f08c201","f08c21","f08c22","f08c23"),]
+
+
+demo_dt_96_y<- setNames(demo_dt_96_y, c("qtype","ser_no","survey_year","rsex","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+
+demo_dt_96_y <- add_column(demo_dt_96_y,rage = NA , .after = "rsex" )
+ 
+
+## denote : 
+# * as missing in 1989
+
+# f0101: dwell1
+# f0102 : dwell2 : 都市、鎮湘、鄉村農村
+# f0103 as sex : 1male
+# f0104 : brith year -> cal age ** missing
+# f02a2: reduc
+# f02a5: ethnicty
+# f02a10: marstat
+# f04b1: nlchldrn
+# f04b4: ntothh
+# f05c3: hlgenrat
+# f11e1: rwkstat *** index 有變！！！
+# f11e2b: rlastocc : 變成現在工作的行業 ***** 要不要放？
+# f06c9b: nomihosp : 變成幾天
+# f06c9c: homsphp1 ： index可能有變
+# f08c21: curdrink
+# f08c22: curchew
+
+
+# f20k1: othpres
+# f08c201: 抽煙 *
+# f08c21: curdrink
+# f08c22: curchew
+# f08c23 : 平常有沒有在運動 0沒有 3每週六次以上 *
+
+#---------
+# adls 
+
+phy_dt_96_y <- dt_96_y[,290:296]
+
+which(colnames(dt_96_y) =="f07c161")
+# phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
+phys_96 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+
+adls_dt_96_y <- dt_96_y[,c("f07c17", "f07c181a","f07c182a","f07c183a","f07c184a","f07c185a","f07c186a")]
+adls_96 <- c("general","bath","clothes","dine","wakeup","walk_indoor","WC")
+# f07c17 general need help 3most serious
+# 181 bath
+# 182 clothes
+# 183 dine
+# 184 wake up 
+# 185 walk inside
+# 186 WC
+
+iadl_dt_96_y <- dt_96_y[,329:335, ]
+which(colnames(dt_96_y) =="f07c197")
+# need data for get help ???
+
+adls_dt_96_y <- cbind(phy_dt_96_y, adls_dt_96_y, iadl_dt_96_y)
+adls_dt_96_y<- setNames(adls_dt_96_y, names)
+
+#----------
+#disease 
+which(colnames(dt_96_y) =="f05c41")
+dis_dt_96_y <- dt_96_y[,c("f05c41","f05c42","f05c43","f05c44","f05c45","f05c46","f05c47", "f05c48","f05c49","f06c5a","f06c5b","f06c5c","f06c5d","f06c5e","f06c5f","f06c5g","f06c5h","f06c5i","f06c5j"),]
+dis_96 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","catar","glau","tbc","kiddi","gout","anem","spur","hipbone","brokenbone","headspine")
+# 沒有問攝護腺問題 #prost
+dis_dt_96_y<- setNames(dis_dt_96_y, dis_96)
+
+dt_96_y <- cbind(demo_dt_96_y, adls_dt_96_y, dis_dt_96_y)
+dt_96_y <- dt_96_y[, "birthyear":= NA][, qser_no := paste0(qtype, ser_no)]
+# find age
+
+a<- d1[qser_no %in% unique(dt_96_y$qser_no)]
+a<- a[, c('qser_no', 'AGE96')]
+dt_96_y <- a[ dt_96_y, on="qser_no"]
+dt_96_y[, rage:= AGE96][ ,AGE96:= NULL][, birthyear := 1996 -1911 - rage]
+
+for (i in colnames(dt_96_o)){
+  if( length(grep(i, colnames(dt_96_y)))!=0){next}
+  else{print(i)}
+}
+# 比96_o 少一個病（攝護腺問題）
+
+```
+
+
+```{r}
+
+# year 1999
+# It mixed the panel of the 1996 youth and older 
+library("data.table")
+dt_99 <- data.table(df_c_99)
+dt_99 <- dt_99[, "survey_year":=1999]
+dt_99 <- dt_99[,"rsex":= NA]
+dt_99 <- dt_99[,"rage":= NA]
+dt_99 <- dt_99[,"reduc":= NA]
+dt_99 <- dt_99[,"rethnicty":= NA]
+
+
+demo_dt_99 <- dt_99[,c("qtype","ser_no","survey_year","rsex","crt1","crt2","f01","f02","reduc","rethnicty","a1_2","b1_5","b15","c1","e1_2","e6","c13b","c13c","c27","c28","c29","c30"),]
+#ntothh exclude parners and childrens
+# e6 is the work type
+# 有身高體重了
+
+demo_99<- c("qtype","ser_no","survey_year","rsex","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport")
+demo_dt_99<- setNames(demo_dt_99, demo_99)
+demo_dt_99 <- add_column(demo_dt_99,rage = NA , .after = "rsex" )
+
+#----------
+# adls
+phy_dt_99 <- dt_99[,c("c24_1","c24_3","c24_4","c24_5","c24_6","c24_7","c24_9"),]
+
+
+which(colnames(dt_99) =="c24_1")
+# phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
+phys_99 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+iadl_dt_99 <- dt_99[,646:651, ]
+iadl_dt_99 <- add_column(iadl_dt_99,dt_99$c24_8, .after = "c25_3" )
+iadl_99 <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+
+
+adls_dt_99 <- dt_99[,c("c261","c262","c263","c264","c265","c266")]
+adls_99 <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+# general of ADLS is missing
+
+names<- append(phys_96,adls_99)
+names <- append(names,iadl_99)
+adls_dt_99 <- cbind(phy_dt_99, adls_dt_99, iadl_dt_99)
+adls_dt_99<- setNames(adls_dt_99, names)
+
+
+
+#----------
+# disease : 
+which(colnames(dt_96_y) =="f05c41")
+dis_dt_99 <- dt_99[,c("c3c1","c3c2","c3c3","c3b4","c3c5","c3c6","c3c7","c3c8","c3c9","c3_10","c3c11","c3c12","c3c13","c3c14"),]
+dis_99 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","hipbone","catar","kiddi","gout","spur")
+# 少了一些症狀，但是多問了跌倒狀況
+# 跌倒狀況有包含有沒有頭部、頸部、脊椎骨折...
+
+
+dis_dt_99<- setNames(dis_dt_99, dis_99)
+# spur = 骨刺(bone spur)
+# arth = 關節炎(arthritis)
+# catar = 白內障(cataract)
+# glau = 青光眼(glaucoma)
+# oteye = 其他眼疾
+# asth = 氣喘(asthma)
+# hibp = 高血壓(high blood pressure)
+# hrtpr = 心臟問題( heart trouble)
+# strok = 中風(stroke)
+# cirpr = 血液循環不良(circulation problem)
+# diab = 糖尿病(diabetes)
+# thydi = 甲狀腺疾病(thyroid disease)
+# hibc = 血油質高 (high blood ??)
+# anem = 貧血(anemia)
+# livpr = 肝膽疾病(liver, gallbladder)
+# const = 便秘與痔瘡(constipation)
+# ulcer = 胃潰瘍(ulcer)
+# kiddi = 腎臟疾病(kidney)
+# prost = 前列腺疾病(prostate)
+# oturi = 其他泌尿科問題( other urine)
+# skdis = 皮膚疾病( skin disease)
+# neur = 腦神經問題(neuro)
+# dizz = 暈眩(dizz)
+# faint = 昏倒(faint)
+# buzz = 耳鳴(buzz)
+# brokbone = 骨折(broken bone)
+
+#*belows are missing in 89
+# cancer = 癌症(cancer) 
+# broh = 支氣管炎(bronchitis) # !!replaceasth to broh
+# tbc = 肺結核(tuberculosis)
+# gout = 痛風(.)
+# hipbone = 髖骨骨折( broken hipbone) ##老人嚴重死因之一
+# headspine = 頭與脊椎外傷
+
+dt_99 <- cbind(demo_dt_99, adls_dt_99, dis_dt_99)
+
+# merge back demo 
+dt_99[, qser_no := paste0(qtype, ser_no)]
+alive_99 <- d1[qser_no %in% unique(dt_99$qser_no)]
+setnames(alive_99 ,c("SEX", "EDUC","ETHC"), c("rsex","reduc","ethnicty"))
+alive_99<- alive_99[, c("qser_no",'rsex','reduc','ethnicty','birthyear')]
+
+dt_99<- alive_99[dt_99, on="qser_no"]
+dt_99[, rage:= survey_year - birthyear-1911][, grep("^i.", colnames(dt_99)) :=NULL ]
+
+
+for (i in colnames(dt_96_o)){
+  if( length(grep(i, colnames(dt_99)))!=0){next}
+  else{print(i)}
+}
+
+
+for (i in colnames(dt_99)){
+  if( length(grep(i, colnames(dt_96_o)))!=0){next}
+  else{print(i)}
+}
+
+# 比96年少了一些病，還有general，但多了worktype
+```
+
+```{r}
+# year 2003, old
+# here contains questionair A and B 
+dt_03o <- data.table(df_c_03_ELDER)
+dt_03o <- dt_03o[, "survey_year":=2003]
+dt_03o <- dt_03o[,"rwstat":= NA]
+dt_03o <- dt_03o[,"worktype":= NA]
+dt_03o <- dt_03o[,"reduc":= NA]
+dt_03o <- dt_03o[,"rethnicty":= NA]
+dt_03o <- dt_03o[,c("crt1","crt2"):= NA]
+dt_03o <- dt_03o[,c("othpres"):= NA]
+
+demo_03o <-c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_1","b22","c1","rwstat","worktype","c12b","c12c","c26","c27","c28","c29")
+
+# b15 -- ntothh ( omit partners and children), I encode b22 to includ all members living in this house
+# c12c 從住院主因變成了最近一次住院是為什麼
+# c26 cursomke ** 以前沒有的但我覺得蠻重要 99 96好像也有 可以考慮放
+# c29 cursport ** 可考慮要不要放
+
+demo_dt_03o <- dt_03o[,c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_1","b22","c1","rwstat","worktype","c12b","c12c","c26","c27","c28","c29"),]
+#ntothh exclude parners and childrens
+# e6 is the work type
+# 有身高體重了
+
+demo_03o<- c("qtype","ser_no","survey_year","rsex","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport")
+demo_dt_03o<- setNames(demo_dt_03o, demo_03o)
+#demo_dt_99 <- add_column(demo_dt_99,rage = NA , .after = "rsex" )
+#-------------
+
+#adls
+
+
+phy_dt_03o <- dt_03o[,c("c231","c233","c234","c235","c236","c237","c239"),]
+
+
+which(colnames(dt_03o) =="c246")
+which(colnames(dt_03o) =="c232")
+# phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
+phys_03o <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+iadl_dt_03o <- dt_03o[,611:616, ]
+iadl_dt_03o <- add_column(iadl_dt_03o,dt_03o$c238, .after = "c243" )
+iadl_03o <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+
+
+adls_dt_03o <- dt_03o[,c("c251","c252","c253","c254","c255","c256")]
+adls_03o <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+# general of ADLS is missing
+
+names<- append(phys_03o,adls_03o)
+names <- append(names,iadl_03o)
+adls_dt_03o <- cbind(phy_dt_03o, adls_dt_03o, iadl_dt_03o)
+adls_dt_03o<- setNames(adls_dt_03o, names)
+
+#----------
+# diseases 
+
+which(colnames(dt_96_y) =="f05c41")
+dis_dt_03o <- dt_03o[,c("c3c1","c3c2","c3c3","c3b4","c3c5","c3c6","c3c7","c3c8","c3c9","c3_10","c3c11","c3c12","c3c13","c3c14","c3c15"),]
+dis_03o <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","hipbone","catar","kiddi","gout","spur","osteo")
+dis_dt_03o<- setNames(dis_dt_03o, dis_03o)
+# 少了一些症狀，但是多問了跌倒狀況
+# 跌倒狀況有包含有沒有頭部、頸部、脊椎骨折...
+# 您“現在”還有這種病症嗎？
+
+
+# spur = 骨刺(bone spur)
+# arth = 關節炎(arthritis)
+# catar = 白內障(cataract)
+# glau = 青光眼(glaucoma)
+# oteye = 其他眼疾
+# asth = 氣喘(asthma)
+# hibp = 高血壓(high blood pressure)
+# hrtpr = 心臟問題( heart trouble)
+# strok = 中風(stroke)
+# cirpr = 血液循環不良(circulation problem)
+# diab = 糖尿病(diabetes)
+# thydi = 甲狀腺疾病(thyroid disease)
+# hibc = 血油質高 (high blood ??)
+# anem = 貧血(anemia)
+# livpr = 肝膽疾病(liver, gallbladder)
+# const = 便秘與痔瘡(constipation)
+# ulcer = 胃潰瘍(ulcer)
+# kiddi = 腎臟疾病(kidney)
+# prost = 前列腺疾病(prostate)
+# oturi = 其他泌尿科問題( other urine)
+# skdis = 皮膚疾病( skin disease)
+# neur = 腦神經問題(neuro)
+# dizz = 暈眩(dizz)
+# faint = 昏倒(faint)
+# buzz = 耳鳴(buzz)
+# brokbone = 骨折(broken bone)
+
+#*belows are missing in 89
+# cancer = 癌症(cancer) 
+# broh = 支氣管炎(bronchitis) # !!replaceasth to broh
+# tbc = 肺結核(tuberculosis)
+# gout = 痛風(.)
+# hipbone = 髖骨骨折( broken hipbone) ##老人嚴重死因之一
+# headspine = 頭與脊椎外傷
+
+#* New in 2003 
+# osteo = osteoporosis 骨質疏鬆
+
+dt_03o <- cbind(demo_dt_03o, adls_dt_03o, dis_dt_03o)
+dt_03o <- dt_03o[, "birthyear":= NA][, qser_no := paste0(qtype, ser_no)]
+
+d3<- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD03/DATA/bkgrd_ab_v2.sav", to.data.frame=TRUE)
+names(d3)<- tolower(names(d3))
+d3<- as.data.table(d3)
+
+d3<- d3[, qser_no := paste0(qtype, ser_no)][, c('qser_no', 'age', 'sex', 'educ', 'crt1', 'crt2', 'ethc')]
+dt_03o <- d3[dt_03o, on="qser_no"]
+dt_03o[,reduc := educ][,ethnicty := ethc][, grep("^i.", colnames(dt_03o)) :=NULL ][, birthyear := 2003 -1911- age][, c('sex','educ', 'ethc') :=NULL][, rage:= age][,age := NULL]
+
+```
+
+```{r}
+# 2003_youth 
+# contain question_type C ( newly added panel from 2003)
+dt_03y <- data.table(df_c_03_YOUTH)
+dt_03y <- dt_03y[, "survey_year":=2003]
+# dt_03y <- dt_03y[,"rwstat":= NA]
+# dt_03y <- dt_03y[,"worktype":= NA]
+# dt_03y <- dt_03y[,"reduc":= NA]
+# dt_03y <- dt_03y[,"rethnicty":= NA]
+dt_03y <- dt_03y[,c("crt1","crt2"):= NA]
+#dt_03y <- dt_03y[,c("othpres"):= NA]
+
+demo_03y <-c("qtype","ser_no","survey_year","sex","c56","c57","crt1","crt2","type","area","a2","a5","a13","b1","b22","c1","e1","e2a","c12b","c12c","c26","c27","c28","c29")
+
+# b15 -- ntothh ( omit partners and children), I encode b22 to includ all members living in this house
+# c12c 從住院主因變成了最近一次住院是為什麼
+# c26 cursomke ** 以前沒有的但我覺得蠻重要 99 96好像也有 可以考慮放
+# c29 cursport ** 可考慮要不要放
+# 有身高體重
+
+which(colnames(dt_03y) =="c12b")
+demo_dt_03y <- dt_03y[,c("qtype","ser_no","survey_year","sex","c56","c57","crt1","crt2","type","area","a2","a5","a13","b1","b22","c1","e1","e2a","c12b","c12c","c26","c27","c28","c29"),]
+#ntothh exclude parners and childrens
+# e6 is the work type
+# 有身高體重了
+
+demo_03y<- c("qtype","ser_no","survey_year","rsex","height","weight","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport")
+demo_dt_03y<- setNames(demo_dt_03y, demo_03y)
+#demo_dt_99 <- add_column(demo_dt_99,rage = NA , .after = "rsex" )
+#-------------
+
+#adls
+
+
+phy_dt_03y <- dt_03y[,c("c231","c233","c234","c235","c236","c237","c239"),]
+
+
+which(colnames(dt_03y) =="c246")
+# phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
+phys_03y <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+iadl_dt_03y <- dt_03y[,608:613, ]
+iadl_dt_03y <- add_column(iadl_dt_03y,dt_03y$c238, .after = "c243" )
+iadl_03y <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+
+
+adls_dt_03y <- dt_03y[,c("c251","c252","c253","c254","c255","c256")]
+adls_03y <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+# general of ADLS is missing
+
+names<- append(phys_03y,adls_03y)
+names <- append(names,iadl_03y)
+adls_dt_03y <- cbind(phy_dt_03y, adls_dt_03y, iadl_dt_03y)
+adls_dt_03y<- setNames(adls_dt_03y, names)
+
+#----------
+# diseases 
+
+#which(colnames(dt_96_y) =="f05c41"
+dis_dt_03y <- dt_03y[,c("c3c1","c3c2","c3c3","c3b4","c3c5","c3c6","c3c7","c3c8","c3c9","c3_10","c3c11","c3c12","c3c13","c3c14","c3c15"),]
+dis_03y <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","hipbone","catar","kiddi","gout","spur","osteo")
+dis_dt_03y<- setNames(dis_dt_03y, dis_03y)
+# 少了一些症狀，但是多問了跌倒狀況
+# 跌倒狀況有包含有沒有頭部、頸部、脊椎骨折...
+# 您“現在”還有這種病症嗎？
+
+
+# spur = 骨刺(bone spur)
+# arth = 關節炎(arthritis)
+# catar = 白內障(cataract)
+# glau = 青光眼(glaucoma)
+# oteye = 其他眼疾
+# asth = 氣喘(asthma)
+# hibp = 高血壓(high blood pressure)
+# hrtpr = 心臟問題( heart trouble)
+# strok = 中風(stroke)
+# cirpr = 血液循環不良(circulation problem)
+# diab = 糖尿病(diabetes)
+# thydi = 甲狀腺疾病(thyroid disease)
+# hibc = 血油質高 (high blood ??)
+# anem = 貧血(anemia)
+# livpr = 肝膽疾病(liver, gallbladder)
+# const = 便秘與痔瘡(constipation)
+# ulcer = 胃潰瘍(ulcer)
+# kiddi = 腎臟疾病(kidney)
+# prost = 前列腺疾病(prostate)
+# oturi = 其他泌尿科問題( other urine)
+# skdis = 皮膚疾病( skin disease)
+# neur = 腦神經問題(neuro)
+# dizz = 暈眩(dizz)
+# faint = 昏倒(faint)
+# buzz = 耳鳴(buzz)
+# brokbone = 骨折(broken bone)
+
+#*belows are missing in 89
+# cancer = 癌症(cancer) 
+# broh = 支氣管炎(bronchitis) # !!replaceasth to broh
+# tbc = 肺結核(tuberculosis)
+# gout = 痛風(.)
+# hipbone = 髖骨骨折( broken hipbone) ##老人嚴重死因之一
+# headspine = 頭與脊椎外傷
+
+#* New in 2003 
+# osteo = osteoporosis 骨質疏鬆
+
+dt_03y <- cbind(demo_dt_03y, adls_dt_03y, dis_dt_03y)
+dt_03y[, qser_no := paste0(qtype, ser_no)]
+
+
+d4<- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD03/DATA/bkgrd_c_v2.sav", to.data.frame=TRUE)
+names(d4)<- tolower(names(d4))
+d4<- as.data.table(d4)
+
+d4<- d4[, qser_no := paste0(qtype, ser_no)][, c('crt1', 'crt2')]
+dt_03y <- d3[dt_03y, on="qser_no"]
+dt_03y[, grep("^i.", colnames(dt_03o)) :=NULL ][, birthyear := 2003 -1911- age][, rage:=age][, rage:=NULL]
+
+```
+
+```{r}
+# 2007
+
+dt_07 <- data.table(df_c_07)
+dt_07 <- dt_07[, "survey_year":=2007]
+# dt_03y <- dt_03y[,"rwstat":= NA]
+# dt_03y <- dt_03y[,"worktype":= NA]
+dt_07 <- dt_07[,"reduc":= NA]
+dt_07 <- dt_07[,"ethnicty":= NA]
+dt_07 <- dt_07[,c("crt1","crt2"):= NA]
+#dt_03y <- dt_03y[,c("othpres"):= NA]
+
+
+sort(table(dt_07$c3_1))
+sort(table(dt_07$c3c_1))
+# missing value of current disease is because he did not have the histroy
+
+demo_07<-c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr2","cvr5","reduc","ethnicty","a1_1","b1_1","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36")
+
+# b15 -- ntothh ( omit partners and children), I encode b22 to includ all members living in this house
+# c12c 從住院主因變成了最近一次住院是為什麼
+# c26 cursomke ** 以前沒有的但我覺得蠻重要 99 96好像也有 可以考慮放
+# c29 cursport ** 可考慮要不要放
+# 有身高體重
+
+which(colnames(dt_07) =="crt1")
+demo_dt_07 <- dt_07[,c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr4","cvr5","reduc","ethnicty","a1_1","b1_1","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36"),]
+#ntothh exclude parners and childrens
+# e6 is the work type
+# 有身高體重了
+# e6 工作類型 e6a（沒放進去） 是行業分類
+
+demo_07<- c("qtype","ser_no","survey_year","rsex","height","weight","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport")
+demo_dt_07<- setNames(demo_dt_07, demo_07)
+demo_dt_07[, dwell1 := ifelse( dwell1 !=8, 2, 1)]
+#demo_dt_99 <- add_column(demo_dt_99,rage = NA , .after = "rsex" )
+#-------------
+
+#adls
+
+
+phy_dt_07 <- dt_07[,c("c14_2","c14_3","c14_4","c14_5","c14_6","c14_7","c14_9"),]
+
+
+which(colnames(dt_07) =="c15_6")
+# phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
+phys_07 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+iadl_dt_07 <- dt_07[,663:668, ]
+iadl_dt_07 <- add_column(iadl_dt_07,dt_07$c14_8, .after = "c15_3" )
+iadl_07 <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+
+
+adls_dt_07 <- dt_07[,c("c17_1","c17_2","c17_3","c17_4","c17_5","c17_6")]
+adls_07 <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+# general of ADLS is missing
+
+names<- append(phys_07,adls_07)
+names <- append(names,iadl_07)
+adls_dt_07 <- cbind(phy_dt_07, adls_dt_07, iadl_dt_07)
+adls_dt_07<- setNames(adls_dt_07, names)
+
+#----------
+# diseases 
+
+dis_dt_07 <- dt_07[,c("c3c_1","c3c_2","c3c_3","c3b_4","c3c_5","c3c_6","c3c_7","c3c_8","c3c_9","c3_10","c3c_11","c3c_12","c3c_13","c3c_14","c3c_15","c3c_16","c3c_17","c3c_18"),]
+dis_07 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","hipbone","catar","kiddi","gout","spur","osteo","hibc","anem","prost")
+dis_dt_07<- setNames(dis_dt_07, dis_07)
+
+
+dt_07 <- cbind(demo_dt_07, adls_dt_07, dis_dt_07)
+dt_07[,qser_no := paste0(qtype, ser_no)]
+
+
+d5<- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD07/DATA/comvarn_v2.sav", to.data.frame = TRUE)
+d5<- as.data.table(d5)
+names(d5)<- tolower(names(d5))
+d5<- d5[, qser_no:= paste0(qtype, ser_no)][, c('qser_no','educ07','ethc07','crt1', 'crt2','age07s')]
+
+dt_07<- d5[dt_07, on="qser_no"]
+dt_07[, reduc := ethc07][, rage:= age07s][, ethnicty := ethc07][, grep("^i.", colnames(dt_07)) :=NULL ][, c('educ07', 'ethc07','age07s','age'):=NULL][, birthyear := 2007 -1911- rage]
+
+
+```
+
+```{r}
+dt <- rbind(dt_93,dt_96_o,dt_96_y, dt_99, dt_03o, dt_03y,dt_07, fill= TRUE)
+class(dt)
+dt[, c('age','sex','educ','ethc','i.crt1', 'i.crt2'):=NULL]
+
+# dt_89 have some distinct diseases and incomplete ADLs
+
+
+write.table(dt, file = "main_subject_0801.csv", sep = ",")
+
+```
+
+
+
+
+
+
+
+
