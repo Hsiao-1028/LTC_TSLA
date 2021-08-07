@@ -36,10 +36,6 @@ data = load("/Users/Ano/Desktop/HRS_Chao/data_merge.RData")
 # head(x)
 
 # General form of datatable : DT[i, j, by] representating row, column, group by
-
-```
-
-```{r}
 dt_89 <- data.table(df_c_89)
 # 89年抓education, age, ethnicty 而已
 
@@ -67,14 +63,14 @@ dt_93<- dt_93[, "birthyear":=NA]
 
 d2<- read.spss("/Users/Ano/Desktop/HRS_Chao/ELDATA/ELDATA93/SPSS/t93back.sav", to.data.frame=TRUE)
 names(d2) <- tolower(names(d2))
+demo_dt_93 <- dt_93[,c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell93","dwell2","reduc","ethnicty","marstat","b6child","b7","c53","curwork","c25b1","d1boccup","c25c1","c43","c44","c46","frqsport"),]
 
-
-
-demo_dt_93 <- dt_93[,c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell93","dwell2","reduc","ethnicty","marstat","b6child","b7","c53","curwork","c25b1","c25c1","c43","c44","c46","frqsport"),]
 
 #888 ==0
 
-demo_dt_93<- setNames(demo_dt_93, c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+demo_dt_93<- setNames(demo_dt_93, c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+
+demo_dt_93[, rwstat:= ifelse( rwstat == 1, 3, demo_dt_93$rwstat)][ , rwstat:= ifelse( rwstat == 2, 1, demo_dt_93$rwstat)]
 #Demogrphy:
 
 #adls
@@ -103,7 +99,6 @@ dis_93 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr"
 dis_dt_93<- setNames(dis_dt_93, dis_93)
 
 dt_93<- cbind(demo_dt_93,adls_dt_93,dis_dt_93)
-head(dt_93)
 
 # 用1989年的資料對回去
 dt_93[, qser_no := paste0(qtype, ser_no)]
@@ -134,10 +129,10 @@ dt_96_o <- dt_96_o[,"ethnicty" := NA]
 # Demo
 
 demo_96_o <-c("qtype","ser_no","survey_year","f0103","f0104","prt1","crt2","f0101","f0102","reduc","ethnicty","f02a3","f04b1","f04b15","f05c1","f11e1","f06c9b","f06c9c","f08c211","f08c221")
-demo_dt_96_o <- dt_96_o[,c("qtype","ser_no","survey_year","f0103","f0104","crt1","crt2","f0101","f0102","reduc","ethnicty","f02a3","f04b1","f04b15","f05c1","f11e1","f06c9b","f06c9c","f08c201","f08c211","f08c221","f08c23a"),]
+demo_dt_96_o <- dt_96_o[,c("qtype","ser_no","survey_year","f0103","f0104","crt1","crt2","f0101","f0102","reduc","ethnicty","f02a3","f04b1","f04b15","f05c1","f11e1","f11e2","f11e3","f06c9b","f06c9c","f08c201","f08c211","f08c221","f08c23"),]
 
 
-demo_dt_96_o<- setNames(demo_dt_96_o, c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+demo_dt_96_o<- setNames(demo_dt_96_o, c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","worktype_96","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
 
 # 103 as rsex
 # 104 as rage
@@ -175,11 +170,14 @@ adls_dt_96_o <- dt_96_o[,c("f07c17", "f07c181a","f07c182a","f07c183a","f07c184a"
 # 184 wake up 
 # 185 walk inside
 # 186 WC
+hadls<- c("bath","clothes","dine","wakeup","walkinside","WC")
+setnames(dt_96_o, c(paste0("f07c18",1:6,"e")), c(paste0("who_help",hadls)))
+
+cols<- grep("^who_help", names(dt_96_o))
+help_adls <- dt_96_o[, .SD, .SDcols=cols ]
+
 
 iadl_dt_96_o <- dt_96_o[,348:354, ]
-
-# need data for get help ???
-
 adls_dt_96_o <- cbind(phy_dt_96_o, adls_dt_96_o, iadl_dt_96_o)
 
 phys_96 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
@@ -188,7 +186,7 @@ iadl_96 <- c("grocery","financial","transport","walk200","heavywork","housework"
 names<- append(phys_96,adls_96)
 names <- append(names,iadl_96)
 adls_dt_96_o<- setNames(adls_dt_96_o, names)
-
+adls_dt_96_o <- cbind(adls_dt_96_o, help_adls)
 # diseases
 
 dis_dt_96_o <- dt_96_o[,c("f05c41","f05c42","f05c43","f05c44","f05c45","f05c46","f05c47", "f05c48","f05c49","f06c5a","f06c5b","f06c5c","f06c5d","f06c5e","f06c5f","f06c5g","f06c5h","f06c5i","f06c5j","f06c5k"),]
@@ -232,7 +230,16 @@ dis_dt_96_o<- setNames(dis_dt_96_o, dis_96)
 # gout = 痛風(.)
 # hipbone = 髖骨骨折( broken hipbone) ##老人嚴重死因之一
 # headspine = 頭與脊椎外傷
+Mode <- function(x) {
+ ux <- na.omit(unique(x))
+ ux[which.max(tabulate(match(x, ux)))]
+}
+adls_dt_96_o[, "adl_who_help":= apply(adls_dt_96_o[, .SD, .SDcols = grep("^who_help", names(adls_dt_96_o))], 1, Mode)]
+adls_dt_96_o[,adl_who_help:= ifelse(is.na(adl_who_help), 88, adl_who_help)][, iadl_who_help := dt_96_o$f07c19b ]
+adls_dt_96_o[, grep("^who_help", names(adls_dt_96_o)):=NULL, ]
+adls_dt_96_o[, adl_need_help := ifelse( bath %in% c(3,4) | clothes %in% c(3,4) | dine %in% c(3,4) | wakeup %in% c(3,4) | walk_indoor %in% c(3,4) | WC %in% c(3,4)  , 1, 0)][, adl_who_help:= ifelse( adl_who_help ==88 & adl_need_help ==1, 0, adl_who_help )][, iadl_who_help := ifelse(dt_96_o$f07c19a ==0, 0, iadl_who_help)][, adl_need_help:=NULL]
 
+adls_96 <- c("general","bath","clothes","dine","wakeup","walk_indoor","WC")
 
 dt_96_o <- cbind(demo_dt_96_o,adls_dt_96_o,dis_dt_96_o)
 dt_96_o <- dt_96_o[,"birthyear" := survey_year - rage][, qser_no := paste0(qtype, ser_no)]
@@ -241,6 +248,7 @@ for (i in colnames(dt_96_o)){
   if( length(grep(i, colnames(dt_93)))!=0){next}
   else{print(i)}
 }
+
 
 d1 <- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD89_99/Data/bkgrdall_v2.sav", to.data.frame=TRUE)
 # find age
@@ -253,6 +261,19 @@ dt_96_o<- alive_96_old[dt_96_o, on="qser_no"]
 dt_96_o[, reduc := dt_96_o$educ][, c("i.ethnicty", "educ") :=NULL]
 
 # 96年多了一個general （總合來說你覺的你今年的身體狀態如何）
+
+work_93 <- dt_93[qser_no %in% dt_96_o$qser_no , c('worktype', 'qser_no')]
+setnames(work_93, c('worktype'), 'worktype_93')
+dt_96_o<- work_93[dt_96_o, on = 'qser_no']
+dt_96_o[, worktype := ifelse(worktype ==2 , worktype_96, worktype_93) ][, c('worktype_93', 'worktype_96') := NULL]
+
+dt_96_o[, bath:= ifelse(bath ==8, 0, bath)]
+dt_96_o[, clothes:= ifelse(clothes ==8, 0, clothes)]
+dt_96_o[, dine:= ifelse(dine ==8, 0, dine)]
+dt_96_o[, wakeup:= ifelse(wakeup ==8, 0, wakeup)]
+dt_96_o[, walk_indoor:= ifelse(walk_indoor ==8, 0, walk_indoor)]
+dt_96_o[, WC:= ifelse(WC ==8, 0, WC)]
+
 ```
 
 
@@ -265,10 +286,10 @@ dt_96_y <- dt_96_y[, "survey_year":=1996]
 #Demo_96_y:
 demo_96_y <- c("qtype","ser_no","survey_year","f0103","crt1","crt2","f0101","f0102","f02a2","f02a5","f02a10","f04b1","f04b4","f05c3","f11e1","f11e2b","f06c9b","f06c9c","f08c201","f08c21","f08c22")
 
-demo_dt_96_y <- dt_96_y[,c("qtype","ser_no","survey_year","f0103","crt1","crt2","f0101","f0102","f02a2","f02a5","f02a10","f04b1","f04b4","f05c3","f11e1","f06c9b","f06c9c","f08c201","f08c21","f08c22","f08c23"),]
+demo_dt_96_y <- dt_96_y[,c("qtype","ser_no","survey_year","f0103","crt1","crt2","f0101","f0102","f02a2","f02a5","f02a10","f04b1","f04b4","f05c3","f11e1","f11e2","f06c9b","f06c9c","f08c201","f08c21","f08c22","f08c23"),]
 
 
-demo_dt_96_y<- setNames(demo_dt_96_y, c("qtype","ser_no","survey_year","rsex","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+demo_dt_96_y<- setNames(demo_dt_96_y, c("qtype","ser_no","survey_year","rsex","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
 
 demo_dt_96_y <- add_column(demo_dt_96_y,rage = NA , .after = "rsex" )
  
@@ -301,8 +322,6 @@ demo_dt_96_y <- add_column(demo_dt_96_y,rage = NA , .after = "rsex" )
 # f08c23 : 平常有沒有在運動 0沒有 3每週六次以上 *
 
 #---------
-# adls 
-
 phy_dt_96_y <- dt_96_y[,290:296]
 
 which(colnames(dt_96_y) =="f07c161")
@@ -319,12 +338,20 @@ adls_96 <- c("general","bath","clothes","dine","wakeup","walk_indoor","WC")
 # 185 walk inside
 # 186 WC
 
+hadls<- c("bath","clothes","dine","wakeup","walkinside","WC")
+setnames(dt_96_y, c(paste0("f07c18",1:6,"e")), c(paste0("who_help",hadls)))
+
+cols<- grep("^who_help", names(dt_96_y))
+help_adls <- dt_96_y[, .SD, .SDcols=cols ]
+
+
 iadl_dt_96_y <- dt_96_y[,329:335, ]
-which(colnames(dt_96_y) =="f07c197")
+
 # need data for get help ???
 
 adls_dt_96_y <- cbind(phy_dt_96_y, adls_dt_96_y, iadl_dt_96_y)
 adls_dt_96_y<- setNames(adls_dt_96_y, names)
+adls_dt_96_y <- cbind(adls_dt_96_y, help_adls)
 
 #----------
 #disease 
@@ -333,6 +360,19 @@ dis_dt_96_y <- dt_96_y[,c("f05c41","f05c42","f05c43","f05c44","f05c45","f05c46",
 dis_96 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","catar","glau","tbc","kiddi","gout","anem","spur","hipbone","brokenbone","headspine")
 # 沒有問攝護腺問題 #prost
 dis_dt_96_y<- setNames(dis_dt_96_y, dis_96)
+
+Mode <- function(x) {
+ ux <- na.omit(unique(x))
+ ux[which.max(tabulate(match(x, ux)))]
+}
+adls_dt_96_y[, "adl_who_help":= apply(adls_dt_96_y[, .SD, .SDcols = grep("^who_help", names(adls_dt_96_y))], 1, Mode)]
+
+adls_dt_96_y[,adl_who_help:= ifelse(is.na(adl_who_help), 88, adl_who_help)][, iadl_who_help := dt_96_y$f07c19b ]
+adls_dt_96_y[, grep("^who_help", names(adls_dt_96_y)):=NULL, ]
+adls_dt_96_y[, adl_need_help := ifelse( bath %in% c(3,4) | clothes %in% c(3,4) | dine %in% c(3,4) | wakeup %in% c(3,4) | walk_indoor %in% c(3,4) | WC %in% c(3,4)  , 1, 0)][, adl_who_help:= ifelse( adl_who_help ==88 & adl_need_help ==1, 0, adl_who_help )][, iadl_who_help := ifelse(dt_96_y$f07c19a ==0, 0, iadl_who_help)][, adl_need_help:=NULL]
+
+
+
 
 dt_96_y <- cbind(demo_dt_96_y, adls_dt_96_y, dis_dt_96_y)
 dt_96_y <- dt_96_y[, "birthyear":= NA][, qser_no := paste0(qtype, ser_no)]
@@ -348,6 +388,15 @@ for (i in colnames(dt_96_o)){
   else{print(i)}
 }
 # 比96_o 少一個病（攝護腺問題）
+
+dt_96_y[, bath:= ifelse(bath ==8, 0, bath)]
+dt_96_y[, clothes:= ifelse(clothes ==8, 0, clothes)]
+dt_96_y[, dine:= ifelse(dine ==8, 0, dine)]
+dt_96_y[, wakeup:= ifelse(wakeup ==8, 0, wakeup)]
+dt_96_y[, walk_indoor:= ifelse(walk_indoor ==8, 0, walk_indoor)]
+dt_96_y[, WC:= ifelse(WC ==8, 0, WC)]
+
+
 
 ```
 
@@ -372,7 +421,7 @@ demo_dt_99 <- dt_99[,c("qtype","ser_no","survey_year","rsex","crt1","crt2","f01"
 
 demo_99<- c("qtype","ser_no","survey_year","rsex","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport")
 demo_dt_99<- setNames(demo_dt_99, demo_99)
-demo_dt_99 <- add_column(demo_dt_99,rage = NA , .after = "rsex" )
+# demo_dt_99 <- add_column(demo_dt_99,rage = NA , .after = "rsex" )
 
 #----------
 # adls
@@ -443,6 +492,7 @@ dis_dt_99<- setNames(dis_dt_99, dis_99)
 # hipbone = 髖骨骨折( broken hipbone) ##老人嚴重死因之一
 # headspine = 頭與脊椎外傷
 
+adls_dt_99[, iadl_who_help := dt_99$c25c][, adl_who_help := dt_99$c26e][, iadl_who_help:= ifelse(dt_99$c25b ==0, 0, iadl_who_help)]
 dt_99 <- cbind(demo_dt_99, adls_dt_99, dis_dt_99)
 
 # merge back demo 
@@ -452,21 +502,25 @@ setnames(alive_99 ,c("SEX", "EDUC","ETHC"), c("rsex","reduc","ethnicty"))
 alive_99<- alive_99[, c("qser_no",'rsex','reduc','ethnicty','birthyear')]
 
 dt_99<- alive_99[dt_99, on="qser_no"]
-dt_99[, rage:= survey_year - birthyear-1911][, grep("^i.", colnames(dt_99)) :=NULL ]
+dt_99[, rage:= survey_year - birthyear-1911]# [, grep("^i.", colnames(dt_99)) :=NULL ]
+dt_99[, c('i.rsex', 'i.reduc', 'i.ethnicty'):=NULL]
+
+# for (i in colnames(dt_96_o)){
+#   if( length(grep(i, colnames(dt_99)))!=0){next}
+#   else{print(i)}
+# }
+# 
+# 
+# for (i in colnames(dt_99)){
+#   if( length(grep(i, colnames(dt_96_o)))!=0){next}
+#   else{print(i)}
+# }
+
+# work_96 <- rbind(dt_96_o, dt_96_y, fill =TRUE)
+# work_96<- work_96[ qser_no %in% dt_99$qser_no, c("qser_no", "worktype")]
+# 
 
 
-for (i in colnames(dt_96_o)){
-  if( length(grep(i, colnames(dt_99)))!=0){next}
-  else{print(i)}
-}
-
-
-for (i in colnames(dt_99)){
-  if( length(grep(i, colnames(dt_96_o)))!=0){next}
-  else{print(i)}
-}
-
-# 比96年少了一些病，還有general，但多了worktype
 ```
 
 ```{r}
@@ -474,21 +528,21 @@ for (i in colnames(dt_99)){
 # here contains questionair A and B 
 dt_03o <- data.table(df_c_03_ELDER)
 dt_03o <- dt_03o[, "survey_year":=2003]
-dt_03o <- dt_03o[,"rwstat":= NA]
-dt_03o <- dt_03o[,"worktype":= NA]
+# dt_03o <- dt_03o[,"rwstat":= NA]
+# dt_03o <- dt_03o[,"worktype":= NA]
 dt_03o <- dt_03o[,"reduc":= NA]
 dt_03o <- dt_03o[,"rethnicty":= NA]
 dt_03o <- dt_03o[,c("crt1","crt2"):= NA]
 dt_03o <- dt_03o[,c("othpres"):= NA]
 
-demo_03o <-c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_1","b22","c1","rwstat","worktype","c12b","c12c","c26","c27","c28","c29")
+demo_03o <-c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_1","b22","c1","rwstat","e6","c12b","c12c","c26","c27","c28","c29")
 
 # b15 -- ntothh ( omit partners and children), I encode b22 to includ all members living in this house
 # c12c 從住院主因變成了最近一次住院是為什麼
 # c26 cursomke ** 以前沒有的但我覺得蠻重要 99 96好像也有 可以考慮放
 # c29 cursport ** 可考慮要不要放
 
-demo_dt_03o <- dt_03o[,c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_1","b22","c1","rwstat","worktype","c12b","c12c","c26","c27","c28","c29"),]
+demo_dt_03o <- dt_03o[,c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_1","b22","c1","e1_2","e6","c12b","c12c","c26","c27","c28","c29"),]
 #ntothh exclude parners and childrens
 # e6 is the work type
 # 有身高體重了
@@ -501,6 +555,9 @@ demo_dt_03o<- setNames(demo_dt_03o, demo_03o)
 #adls
 
 
+#adls
+
+
 phy_dt_03o <- dt_03o[,c("c231","c233","c234","c235","c236","c237","c239"),]
 
 
@@ -508,13 +565,12 @@ which(colnames(dt_03o) =="c246")
 which(colnames(dt_03o) =="c232")
 # phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
 phys_03o <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
-iadl_dt_03o <- dt_03o[,611:616, ]
+iadl_dt_03o <- dt_03o[,c("c241","c242","c243","c244","c245","c246","c24b","c24c"), ]
 iadl_dt_03o <- add_column(iadl_dt_03o,dt_03o$c238, .after = "c243" )
-iadl_03o <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+iadl_03o <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone","iadl_receive_help","iadl_who_help")
 
-
-adls_dt_03o <- dt_03o[,c("c251","c252","c253","c254","c255","c256")]
-adls_03o <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+adls_dt_03o <- dt_03o[,c("c251","c252","c253","c254","c255","c256", "c25e")]
+adls_03o <- c("bath","clothes","dine","wakeup","walk_indoor","WC","adl_who_help")
 # general of ADLS is missing
 
 names<- append(phys_03o,adls_03o)
@@ -522,6 +578,7 @@ names <- append(names,iadl_03o)
 adls_dt_03o <- cbind(phy_dt_03o, adls_dt_03o, iadl_dt_03o)
 adls_dt_03o<- setNames(adls_dt_03o, names)
 
+adls_dt_03o[, iadl_who_help := ifelse(dt_03o$c24b ==0, 0, iadl_who_help)]
 #----------
 # diseases 
 
@@ -581,7 +638,12 @@ d3<- as.data.table(d3)
 
 d3<- d3[, qser_no := paste0(qtype, ser_no)][, c('qser_no', 'age', 'sex', 'educ', 'crt1', 'crt2', 'ethc')]
 dt_03o <- d3[dt_03o, on="qser_no"]
-dt_03o[,reduc := educ][,ethnicty := ethc][, grep("^i.", colnames(dt_03o)) :=NULL ][, birthyear := 2003 -1911- age][, c('sex','educ', 'ethc') :=NULL][, rage:= age][,age := NULL]
+dt_03o[,reduc := educ][,ethnicty := ethc][, birthyear := 2003 -1911- age][, c('sex','educ', 'ethc') :=NULL][, rage:= age][,age := NULL][, c('i.age', 'i.sex', 'i.educ', 'i.crt1', 'i.crt2', 'i.ethc'):= NULL][, iadl_receive_help :=NULL]
+
+
+
+work_99 <- dt_99[qser_no %in% dt_03o$qser_no ,c('qser_no', 'worktype') ]
+
 
 ```
 
@@ -615,7 +677,6 @@ demo_03y<- c("qtype","ser_no","survey_year","rsex","height","weight","crt1","crt
 demo_dt_03y<- setNames(demo_dt_03y, demo_03y)
 #demo_dt_99 <- add_column(demo_dt_99,rage = NA , .after = "rsex" )
 #-------------
-
 #adls
 
 
@@ -625,19 +686,21 @@ phy_dt_03y <- dt_03y[,c("c231","c233","c234","c235","c236","c237","c239"),]
 which(colnames(dt_03y) =="c246")
 # phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
 phys_03y <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
-iadl_dt_03y <- dt_03y[,608:613, ]
+iadl_dt_03y <- dt_03y[,c("c241","c242","c243","c244","c245","c246","c24b","c24c"), ]
 iadl_dt_03y <- add_column(iadl_dt_03y,dt_03y$c238, .after = "c243" )
-iadl_03y <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+iadl_03y <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone","iadl_receive_help","iadl_who_help")
 
 
-adls_dt_03y <- dt_03y[,c("c251","c252","c253","c254","c255","c256")]
-adls_03y <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+adls_dt_03y <- dt_03y[,c("c251","c252","c253","c254","c255","c256", "c25e")]
+adls_03y <- c("bath","clothes","dine","wakeup","walk_indoor","WC","adl_who_help")
 # general of ADLS is missing
 
 names<- append(phys_03y,adls_03y)
 names <- append(names,iadl_03y)
 adls_dt_03y <- cbind(phy_dt_03y, adls_dt_03y, iadl_dt_03y)
 adls_dt_03y<- setNames(adls_dt_03y, names)
+
+adls_dt_03y[, iadl_who_help := ifelse(adls_dt_03y$iadl_receive_help ==0, 0 , iadl_who_help)]
 
 #----------
 # diseases 
@@ -697,9 +760,9 @@ d4<- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD03/DATA/bkgrd_c_v2.sav", 
 names(d4)<- tolower(names(d4))
 d4<- as.data.table(d4)
 
-d4<- d4[, qser_no := paste0(qtype, ser_no)][, c('crt1', 'crt2')]
-dt_03y <- d3[dt_03y, on="qser_no"]
-dt_03y[, grep("^i.", colnames(dt_03o)) :=NULL ][, birthyear := 2003 -1911- age][, rage:=age][, rage:=NULL]
+d4<- d4[, qser_no := paste0(qtype, ser_no)][, c('crt1', 'crt2', 'age', 'sex', 'educ', 'ethc','qser_no')]
+dt_03y <- d4[dt_03y, on="qser_no"]
+dt_03y[, birthyear := 2003 -1911- age][, rage:=age][, rage:=NULL][, c('i.age', 'i.sex', 'i.educ', 'i.crt1', 'i.crt2', 'i.ethc', 'iadl_receive_help'):= NULL]
 
 ```
 
@@ -763,6 +826,8 @@ names<- append(phys_07,adls_07)
 names <- append(names,iadl_07)
 adls_dt_07 <- cbind(phy_dt_07, adls_dt_07, iadl_dt_07)
 adls_dt_07<- setNames(adls_dt_07, names)
+adls_dt_07[, iadl_who_help := ifelse( dt_07$c16b ==0, 0, dt_07$c16c)][, adl_who_help := dt_07$c17e]
+
 
 #----------
 # diseases 
@@ -782,7 +847,8 @@ names(d5)<- tolower(names(d5))
 d5<- d5[, qser_no:= paste0(qtype, ser_no)][, c('qser_no','educ07','ethc07','crt1', 'crt2','age07s')]
 
 dt_07<- d5[dt_07, on="qser_no"]
-dt_07[, reduc := ethc07][, rage:= age07s][, ethnicty := ethc07][, grep("^i.", colnames(dt_07)) :=NULL ][, c('educ07', 'ethc07','age07s','age'):=NULL][, birthyear := 2007 -1911- rage]
+dt_07[, reduc := ethc07][, rage:= age07s][, ethnicty := ethc07][, c('educ07', 'ethc07','age07s','age', 'i.crt1' ,'i.crt2'):=NULL][, birthyear := 2007 -1911- rage]
+
 
 
 ```
@@ -794,8 +860,83 @@ dt[, c('age','sex','educ','ethc','i.crt1', 'i.crt2'):=NULL]
 
 # dt_89 have some distinct diseases and incomplete ADLs
 
+sum(is.na(dt$marstat))
+table(sort(dt$marstat))
 
 write.table(dt, file = "main_subject_0801.csv", sep = ",")
+
+```
+```{r}
+# dt2 有改過一些變數（簡化）
+
+dt2<- copy(dt)
+dt2[, c('general', 'iadl_receive_help', 'height', 'weight'):= NULL]
+# demog
+dt2[, marstat := ifelse(dt2$marstat ==1, 1, 0)] # 1有伴侶， 0沒有伴侶（包括未婚、喪偶...）
+dt2[, birthyear := ifelse( survey_year == 1996 & qtype %in% c('B'), dt2$birthyear - 1911, dt2$birthyear)]
+dt2[, reduc := as.numeric(as.character(dt2$reduc))] 
+dt2[, ethnicty := as.numeric(as.character(dt2$ethnicty))][, ethnicty := ifelse(dt2$ethnicty >=5, 5, dt2$ethnicty)] # 整合到其他
+dt2[, ethn := dt2$ethnicty][, ethnicty :=NULL]
+dt2[, crt1 := as.numeric(as.character(dt2$crt1))]
+dt2[, crt2 := as.numeric(as.character(dt2$crt2))]
+dt2[, dwell1 := as.numeric(as.character(dt2$dwell1))][, dwell1 := ifelse(dwell1 ==3, 2, dt2$dwell1)][, dwell1 := ifelse(survey_year %in% c(1993, 1996) & dwell1 ==4, 2, dt2$dwell1)]
+dt2[, dwell2 := as.numeric(as.character(dt2$dwell2))]
+dt2[, nchldrn := as.numeric(as.character(dt2$nchldrn))]
+dt2[, ntothh := as.numeric(as.character(dt2$ntothh))]
+dt2[,hlgenrat := as.numeric(as.character(dt2$hlgenrat))] 
+dt2[,rwstat := as.numeric(as.character(dt2$rwstat))]
+dt2[,worktype := as.numeric(as.character(dt2$worktype))]
+dt2[, nomihosp:= as.numeric(as.character(dt2$nomihosp))][, nomihosp := ifelse( nomihosp >365 & nomihosp!=888, 999, dt2$nomihosp)]
+dt2[,hosphp1 := as.numeric(as.character(dt2$hosphp1))]
+dt2[,cursmoke := as.numeric(as.character(dt2$cursmoke))]
+dt2[,curdrink := as.numeric(as.character(dt2$curdrink))]
+dt2[,curchew := as.numeric(as.character(dt2$curchew))][, curchew:= ifelse(curchew == 8, 9, curchew)]
+dt2[,frqsport := as.numeric(as.character(dt2$frqsport))][, frqsport:= ifelse(frqsport ==4, 3, frqsport)][, frqsport:= ifelse(frqsport ==5, 9, frqsport)]
+
+#disability 
+
+# physical disability
+dt2[,stand_15 := as.numeric(as.character(dt2$stand_15))][, stand_15 :=NULL] # 2003年前後編碼不一樣
+dt2[, crouch := as.numeric(as.character(dt2$crouch))][, crouch:= ifelse(crouch>=4, 9, crouch)] # 整併到missing
+dt2[, hands_on_head := as.numeric(as.character(dt2$hands_on_head))][, hands_on_head:= ifelse(hands_on_head>=4, 9, hands_on_head)]
+dt2[, twist := as.numeric(as.character(dt2$twist))][, twist:= ifelse(twist>=4, 9, twist)]
+dt2[, carry_heavy := as.numeric(as.character(dt2$carry_heavy))][, twist:= ifelse(carry_heavy>=4, 9, carry_heavy)]
+dt2[, run := as.numeric(as.character(dt2$run))][, run:= ifelse(run>=4, 9, run)]
+dt2[,  walk200 := as.numeric(as.character(dt2$walk200))][, walk200:= ifelse(walk200>=4, 9, walk200)]
+dt2[,  staris := as.numeric(as.character(dt2$staris))][, staris:= ifelse(staris>=4, 9, staris)]
+
+# IADLs 
+dt2[,  grocery:= as.numeric(as.character(dt2$grocery))][, grocery:= ifelse(grocery>=4, 9, grocery)]
+dt2[,  financial:= as.numeric(as.character(dt2$financial))][, financial:= ifelse(financial>=4, 9, financial)]
+dt2[,  transport:= as.numeric(as.character(dt2$transport))][, transport:= ifelse(transport>=4, 9, transport)]
+dt2[,  heavywork:= as.numeric(as.character(dt2$heavywork))][, heavywork:= ifelse(heavywork>=4, 9, heavywork)]
+dt2[,  housework:= as.numeric(as.character(dt2$housework))][, housework:= ifelse(housework>=4, 9, housework)]
+dt2[,  telehphone:= as.numeric(as.character(dt2$telehphone))][, telehphone:= ifelse(telehphone>=4, 9, telehphone)]
+dt2[, iadl_who_help:= as.numeric( as.character(dt2$iadl_who_help))]
+
+# ADLs
+dt2[ , bath:= as.numeric(as.character(dt2$bath))][, bath:= ifelse(bath>=4, 9, bath)]
+dt2[ , clothes:= as.numeric(as.character(dt2$clothes))][, clothes:= ifelse(clothes>=4, 9, clothes)]
+dt2[ , dine:= as.numeric(as.character(dt2$dine))][, dine:= ifelse(dine>=4, 9, dine)]
+dt2[ , wakeup:= as.numeric(as.character(dt2$wakeup))][, wakeup:= ifelse(wakeup>=4, 9, wakeup)]
+dt2[ , walk_indoor:= as.numeric(as.character(dt2$walk_indoor))][, walk_indoor:= ifelse(walk_indoor>=4, 9, walk_indoor)]
+dt2[ , WC:= as.numeric(as.character(dt2$WC))][, WC:= ifelse(WC>=4, 9, WC)]
+dt2[, adl_who_help:= as.numeric( as.character(dt2$adl_who_help))]
+
+# Diseases
+dt2[, hibp:= as.numeric( as.character(dt2$hibp))]
+dt2[, diab:= as.numeric( as.character(dt2$diab))]
+
+
+
+sum(is.na(dt2$hibp))
+table(sort(dt2$diab))
+
+View(dt2[ is.na(dt2$worktype)])
+View(dt2[hibp ==8])
+
+
+
 
 ```
 
