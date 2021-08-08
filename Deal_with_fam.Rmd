@@ -99,7 +99,7 @@ x<-as.data.table(x)
 sort(table(x), decreasing = TRUE)
 
 
-write.table(fam, file = "fam_v3.csv", sep = ",") # include partners
+write.table(fam, file = "fam_v4.csv", sep = ",") # include partners
 
 table(sort(fam$adl_who_help))
 class(fam$adl_who_help)
@@ -112,7 +112,7 @@ class(fam$adl_who_help)
 
 ```{r}
 # matching 
-fam<- read.csv("/Users/Ano/Desktop/HRS_Chao/TSLA/fam_v3.csv") # added spouse
+fam<- read.csv("/Users/Ano/Desktop/HRS_Chao/LTC_TSLA/fam_v4.csv") # added spouse and iadl 
 fam<- as.data.table(fam)
 fam[, "ID":= paste0(qtype, ser_no, "_", relationship)]
 fam[,c("member_id","ID_i"):=NULL]
@@ -367,17 +367,17 @@ one2one<- function(mydat, col1, col2) {
 ```{r}
 # more cluster centers than distinct data points.
 
-distinct<-function(x){length(unique(paste0(problem_data[qser_no ==x, ]$relationship, problem_data[qser_no==x, ]$gender, problem_data[qser_no==x, ]$birthyear, problem_data[qser_no==x, ]$education)))}
-
-distinct("B3310")
-
-get_kmeans("B3310")
-View(problem_data[qser_no =="B3310"])
-sum(problem_data[qser_no =="B3310"]$survey_year == getmode(problem_data[qser_no =="B3310"]$survey_year))
-kmeans(problem_data[qser_no =="B3310", .SD , .SDcols = c("k_gender","k_education", "relationship","birthyear")], centers = 9, algorithm = "MacQueen")
-
-Kmeans(problem_data[qser_no =="B3310", .SD , .SDcols = c("k_gender","k_education", "relationship")], centers = 10,method = "euclidean")
-
+# distinct<-function(x){length(unique(paste0(problem_data[qser_no ==x, ]$relationship, problem_data[qser_no==x, ]$gender, problem_data[qser_no==x, ]$birthyear, problem_data[qser_no==x, ]$education)))}
+# 
+# distinct("B3310")
+# 
+# get_kmeans("B3310")
+# View(problem_data[qser_no =="B3310"])
+# sum(problem_data[qser_no =="B3310"]$survey_year == getmode(problem_data[qser_no =="B3310"]$survey_year))
+# kmeans(problem_data[qser_no =="B3310", .SD , .SDcols = c("k_gender","k_education", "relationship","birthyear")], centers = 9, algorithm = "MacQueen")
+# 
+# Kmeans(problem_data[qser_no =="B3310", .SD , .SDcols = c("k_gender","k_education", "relationship")], centers = 10,method = "euclidean")
+# 
 
 ```
 
@@ -392,7 +392,7 @@ percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0][, k_
 # spouses 只取最精準的
 spouses_full<- percise
 
-spouses<- percise[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+spouses<- percise[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 
 
@@ -433,7 +433,7 @@ rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc 
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 elders_all <- try
-elders<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+elders<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 ```
 
@@ -471,7 +471,7 @@ rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc 
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 same_gen_all<- try
-same_gen<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+same_gen<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 ```
 
@@ -508,7 +508,7 @@ rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc 
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 son_1_all <-try
-son_1<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+son_1<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 # origin :36376,  percise : 32283 rescue_1 : 432 rescue_2: 1212 total 33956/36376
 
@@ -542,7 +542,7 @@ rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc 
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 son_2_all <-try
-son_2<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+son_2<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 ```
 
@@ -581,7 +581,7 @@ re_detect(1996,1999,2003,2007) # is a mess的人
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
-daughters_1<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+daughters_1<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 # origin 33914, percise 28461, rescue_1 642, rescue_2 1143, total 30352/33914
 
 
@@ -621,7 +621,7 @@ rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc 
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 daughter_2_all <- try
-daughters_2<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+daughters_2<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 # origin : 1644筆, percise 728, rescue_1 95, rescue_2 332, total 1155/1644
 # origin: 2434, 1247, 168, 391, total : 1806/ 2434
@@ -665,7 +665,7 @@ rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc 
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 next_gen_all <- try
-next_gen<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+next_gen<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 # original 13937, percise : 4566, rescue_1 :131, rescue_2 : 1860, total 6557/ 13937
 
@@ -706,7 +706,7 @@ rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc 
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 daughters_in_law_all <-try
-daughters_in_law<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+daughters_in_law<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 # origin : 7277, percise 6699, rescue_1 271, rescue_2 77 , total 7074/ 7277 
 
@@ -745,7 +745,7 @@ rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc 
 
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
-others<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help")]
+others<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 # origin : 533, percise : 458, rescue_1 :25, rescue_2 : 8, total : 491/ 533
 
@@ -760,7 +760,7 @@ fam_re <- rbind(spouses, elders,same_gen, son_1, son_2, daughters_1, daughters_2
 fam_re[, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(2:4), paste0(fam_re$k_group, "spouses"), NA)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(5:19), paste0(fam_re$k_group, "elders"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(20:29), paste0(fam_re$k_group, "same_generation"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(30:34), paste0(fam_re$k_group, "sons_1"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(35:39), paste0(fam_re$k_group, "sons_2"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(40:44), paste0(fam_re$k_group, "daughter_1"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(45:49), paste0(fam_re$k_group, "daughters_2"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(50:62), paste0(fam_re$k_group, "grand_sons"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(91:96), paste0(fam_re$k_group, "dauhters_in_law"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(70:83, 97), paste0(fam_re$k_group, "others"), fam_re$kk_group)]
 
 
-write.table(fam_re, file = "family_member_0801.csv", sep = ",") 
+write.table(fam_re, file = "family_member_0808.csv", sep = ",") 
 
 
 
