@@ -1,0 +1,251 @@
+---
+title: "fam_1999"
+author: "Hsiao"
+date: "6/30/2021"
+output: html_document
+---
+
+```{r}
+library(data.table)
+data = load("/Users/Ano/Desktop/HRS_Chao/data_merge.RData")
+
+```
+
+
+
+
+```{r}
+# 1999 前處理
+
+dt_99 <- data.table(df_c_99)
+dt_99 <- dt_99[, "survey_year":=1999]
+dt_99 <- dt_99[,"rsex":= NA]
+dt_99 <- dt_99[,"rage":= NA]
+dt_99 <- dt_99[,"reduc":= NA]
+dt_99 <- dt_99[,"rethnicty":= NA]
+
+
+demo_dt_99 <- dt_99[,c("qtype","ser_no","survey_year","rsex","crt1","crt2","f01","f02","reduc","rethnicty","a1_2","b1_5","b15","c1","e1_2","e6","c13b","c13c","c27","c28","c29","c30"),]
+
+demo_99<- c("qtype","ser_no","survey_year","rsex","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport")
+demo_dt_99<- setNames(demo_dt_99, demo_99)
+#----------
+# adls
+phy_dt_99 <- dt_99[,c("c24_1","c24_3","c24_4","c24_5","c24_6","c24_7","c24_9"),]
+
+
+which(colnames(dt_99) =="c24_1")
+phys_99 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+iadl_dt_99 <- dt_99[,646:651, ]
+iadl_dt_99 <- add_column(iadl_dt_99,dt_99$c24_8, .after = "c25_3" )
+iadl_99 <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+
+
+adls_dt_99 <- dt_99[,c("c261","c262","c263","c264","c265","c266")]
+adls_99 <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+names<- append(phys_96,adls_99)
+names <- append(names,iadl_99)
+adls_dt_99 <- cbind(phy_dt_99, adls_dt_99, iadl_dt_99)
+adls_dt_99<- setNames(adls_dt_99, names)
+
+
+
+#----------
+# disease : 
+which(colnames(dt_96_y) =="f05c41")
+dis_dt_99 <- dt_99[,c("c3c1","c3c2","c3c3","c3b4","c3c5","c3c6","c3c7","c3c8","c3c9","c3_10","c3c11","c3c12","c3c13","c3c14"),]
+dis_99 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","hipbone","catar","kiddi","gout","spur")
+dis_dt_99<- setNames(dis_dt_99, dis_99)
+
+adls_dt_99[, iadl_who_help := dt_99$c25c][, adl_who_help := dt_99$c26e][, iadl_who_help:= ifelse(dt_99$c25b ==0, 0, iadl_who_help)]
+
+
+
+
+```
+
+
+```{r}
+#fam
+dt_96<- as.data.table( rbind(dt_96_o, dt_96_y, fill = TRUE))
+dt_96[,"ID":= paste0(dt_96$qtype, dt_96$ser_no)]
+dt_99[,"ID":= paste0(dt_99$qtype, dt_99$ser_no)]
+
+survive<- intersect(dt_96$ID, dt_99$ID)
+
+ss<- dt_96[ID %in% survive, c("ID", "rsex", "0_age", "0_edu")]
+setnames(ss, c("ID", "rsex", "0_age", "0_edu"), c("ID","rsex_96", "96age", "96edu"))
+
+dt_99<- ss[dt_99, on="ID"]
+dt_99$rsex<- dt_99$rsex_96
+
+# 伴侶：
+
+dt_99[, "0_relation":= 2] 
+dt_99[, "0_gender":= ifelse(dt_99$rsex ==1, 2, 1)] 
+dt_99[, "0_gender":= ifelse(dt_99$a1_2 %in% c(3,4,5,6), 8, dt_99$"0_gender")]  # 不同住的配偶會在這裡被清掉
+dt_99[, "0_age":= dt_99$"96age"+ 3]
+dt_99[, "0_edu":= dt_99$"96edu"]
+dt_99[, "0_work":=  as.character(dt_99$e20)]
+dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(1,2), 1,dt_99$"0_work" ) ] # 有工作，有工作但現在沒去做
+dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(3), 7,dt_99$"0_work" ) ] # 幫忙家裡做
+dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(4,6), 333, dt_99$"0_work" ) ] # 失業或是退休
+dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(5), 4,dt_99$"0_work" ) ] # 家務事
+dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(333), 5,dt_99$"0_work" ) ] # 家務事
+dt_99[, "0_marstat":= 1]
+dt_99[, "0_livstat":= 0]
+dt_99[, "0_livwhere":= 0]
+dt_99[, "0_meet":= 0]
+dt_99[, "0_tele":= 0]
+
+# 同住子女 (6)
+# No.6 is missing in the data set
+for(i in 1:6){setnames(dt_99, paste0( "b5_0", i), paste0(i ,"_relation"))}
+for(i in 1:6){setnames(dt_99, paste0( "b6_0", i), paste0(i ,"_gender"))}
+for(i in 1:6){setnames(dt_99, paste0( "b7_0", i), paste0(i ,"_age"))}
+for(i in 1:6){setnames(dt_99, paste0( "b8_0", i), paste0(i ,"_edu"))}
+for(i in 1:6){setnames(dt_99, paste0( "b9_0", i), paste0(i ,"_work"))}
+for(i in 1:6){setnames(dt_99, paste0( "b10_0", i), paste0(i ,"_marstat"))}
+dt_99[, paste0(1:6, "_livstat"):= 0, ] #0 = 住在一起
+dt_99[, paste0(1:6, "_livwhere"):= 0, ] #0 = 住在一起
+dt_99[, paste0(1:6, "_meet"):= 0, ] #0 = 住在一起
+dt_99[, paste0(1:6, "_tele"):= 0, ] #0 = 住在一起
+
+# 不同住子女 (11)
+# No.15, 16, 17 is missing in the data set
+for(i in 11:21){setnames(dt_99, paste0( "b5_", i), paste0(i-4 ,"_relation"))}
+for(i in 11:21){setnames(dt_99, paste0( "b6_", i), paste0(i-4 ,"_gender"))}
+for(i in 11:21){setnames(dt_99, paste0( "b7_", i), paste0(i-4 ,"_age"))}
+for(i in 11:21){setnames(dt_99, paste0( "b8_", i), paste0(i-4 ,"_edu"))}
+for(i in 11:21){setnames(dt_99, paste0( "b9_", i), paste0(i-4 ,"_work"))}
+for(i in 11:21){setnames(dt_99, paste0( "b10_", i), paste0(i-4 ,"_marstat"))}
+for(i in 11:21){setnames(dt_99, paste0( "b11_", i), paste0(i-4 ,"_livstat"))}
+for(i in 11:21){setnames(dt_99, paste0( "b12_", i), paste0(i-4 ,"_livwhere"))}
+for(i in 11:21){setnames(dt_99, paste0( "b13_", i), paste0(i-4 ,"_meet"))}
+for(i in 11:21){setnames(dt_99, paste0( "b14_", i), paste0(i-4 ,"_tele"))}
+
+# 其他家戶成員(看起來是住在一起的) (16)
+# No.30, 31, 32, 33 is missing in the data set
+for(i in 1:9){setnames(dt_99, paste0( "b16_0", i), paste0(i+17 ,"_relation"))}
+for(i in 1:9){setnames(dt_99, paste0( "b17_0", i), paste0(i+17 ,"_gender"))}
+for(i in 1:9){setnames(dt_99, paste0( "b18_0", i), paste0(i+17 ,"_age"))}
+for(i in 1:9){setnames(dt_99, paste0( "b19_0", i), paste0(i+17 ,"_edu"))}
+for(i in 1:9){setnames(dt_99, paste0( "b20_0", i), paste0(i+17 ,"_work"))}
+for(i in 1:9){setnames(dt_99, paste0( "b21_0", i), paste0(i+17 ,"_marstat"))}
+
+for(i in 10:16){setnames(dt_99, paste0( "b16_", i), paste0(i+17 ,"_relation"))}
+for(i in 10:16){setnames(dt_99, paste0( "b17_", i), paste0(i+17 ,"_gender"))}
+for(i in 10:16){setnames(dt_99, paste0( "b18_", i), paste0(i+17 ,"_age"))}
+for(i in 10:16){setnames(dt_99, paste0( "b19_", i), paste0(i+17 ,"_edu"))}
+for(i in 10:16){setnames(dt_99, paste0( "b20_", i), paste0(i+17 ,"_work"))}
+for(i in 10:16){setnames(dt_99, paste0( "b21_", i), paste0(i+17 ,"_marstat"))}
+dt_99[, paste0(18:33, "_livstat"):= 0, ] #0 = 住在一起
+dt_99[, paste0(18:33, "_livwhere"):= 0, ] #0 = 住在一起
+dt_99[, paste0(18:33, "_meet"):= 0, ] #0 = 住在一起
+dt_99[, paste0(18:33, "_tele"):= 0, ] #0 = 住在一起
+
+# 沒有抓到不同住的非子女：這部分會被放在特別點出來的關係那個block
+
+
+table(sort(dt_99$"21_relation"))
+# remarks : 同住的父親約莫有45人，不同住且還健在的父親大概有250人，但因為後者的資料是被算在：與個案的關係，所以我在想是不是不需要記錄（可能會抓到重複）
+
+
+
+cols<- c(unlist( lapply(paste0("^", 0:33,"_"), function(x){grep(x, names(dt_99), value = T)})))
+class(cols)
+fam_99<- dt_99[, cols, with=FALSE ]
+
+dt_99 <- cbind(demo_dt_99, adls_dt_99, dis_dt_99, fam_99)
+
+# merge back demo 
+dt_99[, qser_no := paste0(qtype, ser_no)]
+alive_99 <- d1[qser_no %in% unique(dt_99$qser_no)]
+setnames(alive_99 ,c("SEX", "EDUC","ETHC"), c("rsex","reduc","ethnicty"))
+alive_99<- alive_99[, c("qser_no",'rsex','reduc','ethnicty','birthyear')]
+
+dt_99<- alive_99[dt_99, on="qser_no"]
+dt_99[, rage:= survey_year - birthyear-1911]# [, grep("^i.", colnames(dt_99)) :=NULL ]
+dt_99[, c('i.rsex', 'i.reduc', 'i.ethnicty'):=NULL]
+
+```
+
+
+```{r}
+library(reshape)
+
+liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
+
+cols<- unlist(lapply(0:33, function(x){paste0(x,liv)}))
+cols<- append(c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help'), cols)
+tt<- dt_99[, .SD, .SDcols=cols ] 
+
+x<- list( c(paste0(0:33, "_relation")), c(paste0(0:33, "_gender")), c(paste0(0:33, "_age")), c(paste0(0:33,"_edu")), c(paste0(0:33, "_work")), c(paste0(0:33, "_marstat")), c(paste0(0:33, "_livstat")), c(paste0(0:33, "_livwhere")), c(paste0(0:33, "_meet")), c(paste0(0:33, "_tele")))
+
+dt_99_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","livstat","livwhere","meet","tele"))
+
+dt_99_reshape <- as.data.table(dt_99_reshape)
+dt_99_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
+
+# NAs 是有出現在codebook上，但沒有出現在dataset裡面的資料...
+
+
+
+```
+
+```{r}
+# cleaning 
+########## as.numeric (as.character)
+fam_99 <- as.data.table(dt_99_reshape)
+test<- fam_99[gender %in% c(1,2,9)]
+
+
+test[,relationship:= as.numeric(as.character(relationship))]
+test[,age:= as.numeric(as.character(age))]
+test[, age:= ifelse(age ==1002 , NA, test$age)]
+
+test[,edu:= as.numeric(as.character(edu))]
+test[,work:= as.numeric(as.character(work))]
+test[,marstat:= as.numeric(as.character(marstat))]
+test[,livstat:= as.numeric(as.character(livstat))]
+test[,livwhere:= as.numeric(as.character(livwhere))]
+test[, meet:= as.numeric(as.character(meet))]
+test[,tele:= as.numeric(as.character(tele))]
+
+# lapply(test[, .SD, .SDcols = c("age","edu","work","marstat","livstat","livwhere","meet","tele")], as.numeric)
+
+
+test[,meet:= ifelse(test$meet ==8, 99 ,test$meet)]
+
+fam_99<-test
+```
+
+
+```{r}
+# find other sources for spouses age 
+
+library('foreign')
+
+
+s<- read.spss("/Users/Ano/Desktop/HRS_Chao/ELDATA/ELDATA89/SPSS/deck1.sav", to.data.frame = TRUE)
+# 目前無法
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

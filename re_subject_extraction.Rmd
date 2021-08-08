@@ -114,6 +114,10 @@ d2<- d2[ , c('qser_no', 'marstat')]
 dt_93 <- d2[dt_93, on='qser_no']
 dt_93[, i.marstat:= NULL]
 
+
+# 93年 diseases的encoding 不一樣
+# 把2都改成0 
+
 ```
 
 
@@ -405,7 +409,7 @@ dt_96_y[, WC:= ifelse(WC ==8, 0, WC)]
 
 # year 1999
 # It mixed the panel of the 1996 youth and older 
-library("data.table")
+
 dt_99 <- data.table(df_c_99)
 dt_99 <- dt_99[, "survey_year":=1999]
 dt_99 <- dt_99[,"rsex":= NA]
@@ -863,20 +867,20 @@ dt[, c('age','sex','educ','ethc','i.crt1', 'i.crt2'):=NULL]
 sum(is.na(dt$marstat))
 table(sort(dt$marstat))
 
-write.table(dt, file = "main_subject_0801.csv", sep = ",")
+# write.table(dt, file = "main_subject_0801.csv", sep = ",")
 
 ```
 ```{r}
 # dt2 有改過一些變數（簡化）
 
 dt2<- copy(dt)
-dt2[, c('general', 'iadl_receive_help', 'height', 'weight'):= NULL]
+dt2[, c('general', 'iadl_receive_help', 'height', 'weight', 'osteo','hibc'):= NULL]
 # demog
 dt2[, marstat := ifelse(dt2$marstat ==1, 1, 0)] # 1有伴侶， 0沒有伴侶（包括未婚、喪偶...）
 dt2[, birthyear := ifelse( survey_year == 1996 & qtype %in% c('B'), dt2$birthyear - 1911, dt2$birthyear)]
 dt2[, reduc := as.numeric(as.character(dt2$reduc))] 
 dt2[, ethnicty := as.numeric(as.character(dt2$ethnicty))][, ethnicty := ifelse(dt2$ethnicty >=5, 5, dt2$ethnicty)] # 整合到其他
-dt2[, ethn := dt2$ethnicty][, ethnicty :=NULL]
+dt2[, ethnicity := dt2$ethnicty][, ethnicty:= NULL]
 dt2[, crt1 := as.numeric(as.character(dt2$crt1))]
 dt2[, crt2 := as.numeric(as.character(dt2$crt2))]
 dt2[, dwell1 := as.numeric(as.character(dt2$dwell1))][, dwell1 := ifelse(dwell1 ==3, 2, dt2$dwell1)][, dwell1 := ifelse(survey_year %in% c(1993, 1996) & dwell1 ==4, 2, dt2$dwell1)]
@@ -924,18 +928,44 @@ dt2[ , WC:= as.numeric(as.character(dt2$WC))][, WC:= ifelse(WC>=4, 9, WC)]
 dt2[, adl_who_help:= as.numeric( as.character(dt2$adl_who_help))]
 
 # Diseases
-dt2[, hibp:= as.numeric( as.character(dt2$hibp))]
-dt2[, diab:= as.numeric( as.character(dt2$diab))]
+# 1996年 encoding 2 = 沒有這個病, 8 是不適用（1999之後會問你你是否曾經有這個病，沒有的話這裡會直接被跳過 encode 成 8 ) ，所以可以直接認定為沒有這個病
+dt2[, hibp:= as.numeric( as.character(dt2$hibp))][, hibp := ifelse( hibp %in% c(2,8), 0, hibp)]
+dt2[, diab:= as.numeric( as.character(dt2$diab))][, diab := ifelse( diab %in% c(2,8), 0, diab)]
+dt2[, hrtpr:= as.numeric( as.character(dt2$hrtpr))][, hrtpr := ifelse( hrtpr %in% c(2,8), 0, hrtpr)]
+dt2[, strok:= as.numeric( as.character(dt2$strok))][, strok := ifelse( strok %in% c(2,8), 0, strok)]
+dt2[, cancer:= as.numeric( as.character(dt2$cancer))][, cancer := ifelse( cancer %in% c(2,8), 0, cancer)]
+dt2[, broh:= as.numeric( as.character(dt2$broh))][, broh := ifelse( broh %in% c(2,8), 0, broh)]
+dt2[, arth:= as.numeric( as.character(dt2$arth))][, arth := ifelse( arth %in% c(2,8), 0, arth)]
+dt2[, ulcer:= as.numeric( as.character(dt2$ulcer))][, ulcer := ifelse( ulcer %in% c(2,8), 0, ulcer)]
+dt2[, livpr:= as.numeric( as.character(dt2$livpr))][, livpr := ifelse( livpr %in% c(2,8), 0, livpr)]
+dt2[, catar:= as.numeric( as.character(dt2$catar))][, catar := ifelse( catar %in% c(2,8), 0, catar)]
+dt2[, glau:= as.numeric( as.character(dt2$glau))][, glau := ifelse( glau %in% c(2,8), 0, glau)]
+dt2[, tbc:= as.numeric( as.character(dt2$tbc))][, tbc := ifelse( tbc %in% c(2,8), 0, tbc)]
+dt2[, kiddi:= as.numeric( as.character(dt2$kiddi))][, kiddi := ifelse( kiddi %in% c(2,8), 0, kiddi)]
+dt2[, gout:= as.numeric( as.character(dt2$gout))][, gout := ifelse( gout %in% c(2,8), 0, gout)]
+dt2[, anem:= as.numeric( as.character(dt2$anem))][, anem := ifelse( anem %in% c(2,8), 0, anem)]
+dt2[, spur:= as.numeric( as.character(dt2$spur))][, spur := ifelse( spur %in% c(2,8), 0, spur)]
+dt2[, hipbone:= as.numeric( as.character(dt2$hipbone))][, hipbone := ifelse( hipbone %in% c(2,8), 0, hipbone)]
+dt2[, brokenbone:= as.numeric( as.character(dt2$brokenbone))][, brokenbone := ifelse( brokenbone %in% c(2,8), 0, brokenbone)]
+dt2[, headspine:= as.numeric( as.character(dt2$headspine))][, headspine := ifelse( headspine %in% c(2,8), 0, headspine)]
+dt2[, prost:= as.numeric( as.character(dt2$prost))][, prost := ifelse( prost %in% c(2,8), 0, prost)]
+
+write.table(dt2, file = "main_subject_0807.csv", sep = ",")
 
 
-
-sum(is.na(dt2$hibp))
-table(sort(dt2$diab))
-
-View(dt2[ is.na(dt2$worktype)])
-View(dt2[hibp ==8])
-
-
+# sum(is.na(dt2$hibp))
+# table(sort(dt2$diab))
+# table(sort(dt2$prost))
+# 
+# 
+# unique(dt2[is.na(dt2$prost)]$survey_year)
+# 
+# 
+# 
+# View(dt2[ is.na(dt2$hipbone)])
+# View(dt2[hibp ==2])
+# 
+# unique(dt2[is.na(dt2$tbc)]$survey_year)
 
 
 ```

@@ -1,0 +1,476 @@
+---
+title: "1996_family_member"
+author: "Hsiao"
+date: "6/27/2021"
+output: html_document
+---
+
+```{r}
+# packages 
+library("data.table") 
+library("magrittr")
+library("naniar")
+library("plyr")
+library("dplyr")
+library("stringr")
+library("ggplot2")
+library("tidyr")
+library("tibble")
+library("Hmisc")
+library('foreign')
+```
+
+
+```{r}
+# import data 
+load("/Users/Ano/Desktop/HRS_Chao/data_merge.RData")
+
+```
+
+
+```{r}
+
+# 1996 
+dt_96_o <- data.table(df_c_96_ELDER)
+dt_96_o <- dt_96_o[, "survey_year":=1996]
+dt_96_o <- dt_96_o[,"reduc" := NA]
+dt_96_o <- dt_96_o[,"ethnicty" := NA]
+
+
+demo_96_o <-c("qtype","ser_no","survey_year","f0103","f0104","prt1","crt2","f0101","f0102","reduc","ethnicty","f02a3","f04b1","f04b15","f05c1","f11e1","f06c9b","f06c9c","f08c211","f08c221")
+demo_dt_96_o <- dt_96_o[,c("qtype","ser_no","survey_year","f0103","f0104","crt1","crt2","f0101","f0102","reduc","ethnicty","f02a3","f04b1","f04b15","f05c1","f11e1","f11e2","f11e3","f06c9b","f06c9c","f08c201","f08c211","f08c221","f08c23"),]
+demo_dt_96_o<- setNames(demo_dt_96_o, c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","worktype_96","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+
+#--------------------
+# Adls
+phy_dt_96_o <- dt_96_o[,309:315,]
+
+adls_dt_96_o <- dt_96_o[,c("f07c17", "f07c181a","f07c182a","f07c183a","f07c184a","f07c185a","f07c186a")]
+hadls<- c("bath","clothes","dine","wakeup","walkinside","WC")
+setnames(dt_96_o, c(paste0("f07c18",1:6,"e")), c(paste0("who_help",hadls)))
+
+cols<- grep("^who_help", names(dt_96_o))
+help_adls <- dt_96_o[, .SD, .SDcols=cols ]
+
+
+iadl_dt_96_o <- dt_96_o[,348:354, ]
+adls_dt_96_o <- cbind(phy_dt_96_o, adls_dt_96_o, iadl_dt_96_o)
+
+phys_96 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+adls_96 <- c("general","bath","clothes","dine","wakeup","walk_indoor","WC")
+iadl_96 <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+names<- append(phys_96,adls_96)
+names <- append(names,iadl_96)
+adls_dt_96_o<- setNames(adls_dt_96_o, names)
+adls_dt_96_o <- cbind(adls_dt_96_o, help_adls)
+# diseases
+
+dis_dt_96_o <- dt_96_o[,c("f05c41","f05c42","f05c43","f05c44","f05c45","f05c46","f05c47", "f05c48","f05c49","f06c5a","f06c5b","f06c5c","f06c5d","f06c5e","f06c5f","f06c5g","f06c5h","f06c5i","f06c5j","f06c5k"),]
+
+
+dis_96 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","catar","glau","tbc","kiddi","gout","anem","spur","hipbone","brokenbone","headspine","prost")
+dis_dt_96_o<- setNames(dis_dt_96_o, dis_96)
+
+Mode <- function(x) {
+ ux <- na.omit(unique(x))
+ ux[which.max(tabulate(match(x, ux)))]
+}
+adls_dt_96_o[, "adl_who_help":= apply(adls_dt_96_o[, .SD, .SDcols = grep("^who_help", names(adls_dt_96_o))], 1, Mode)]
+adls_dt_96_o[,adl_who_help:= ifelse(is.na(adl_who_help), 88, adl_who_help)][, iadl_who_help := dt_96_o$f07c19b ]
+adls_dt_96_o[, grep("^who_help", names(adls_dt_96_o)):=NULL, ]
+adls_dt_96_o[, adl_need_help := ifelse( bath %in% c(3,4) | clothes %in% c(3,4) | dine %in% c(3,4) | wakeup %in% c(3,4) | walk_indoor %in% c(3,4) | WC %in% c(3,4)  , 1, 0)][, adl_who_help:= ifelse( adl_who_help ==88 & adl_need_help ==1, 0, adl_who_help )][, iadl_who_help := ifelse(dt_96_o$f07c19a ==0, 0, iadl_who_help)][, adl_need_help:=NULL]
+
+adls_96 <- c("general","bath","clothes","dine","wakeup","walk_indoor","WC")
+
+
+```
+
+
+
+```{r}
+# fam 96o
+dt_89 <- copy(df_c_89)
+dt_89<- as.data.table(dt_89)
+edu<- dt_89[,c("ser_no","speduc") , ]
+edu<- as.data.table(edu)
+
+
+# 存活下來的人： 
+survive <- intersect( dt_96_o$ser_no, dt_89$ser_no)
+edu<-edu[ser_no %in% unique(survive)]
+dt_96_o<- edu[dt_96_o, on= "ser_no"]
+
+# 只抓住在一起的配偶
+# 其他就encode 88 
+dt_96_o[, "0_relation":= 2,]
+dt_96_o[, "0_gender":=  ifelse(dt_96_o$f0103 == 1, 2 , 1 )][, '0_gender':= ifelse(dt_96_o$f02a3 ==1, dt_96_o$'0_gender', 8) ]
+dt_96_o[, "0_age":= 87- as.numeric(dt_89[ser_no %in% unique(survive) ]$spyrbir)] # 要從1989年的回推，但當年資料var 超大，不確定是怎樣
+# dt_96_o[, "0_age":= ifelse( dt_96_y$"0_age" %in% c(-13, -14), 999, dt_96_y$"0_age" )]  # 去掉88, 98, 99 為不適用與missing
+
+dt_96_o[, "0_edu":=  dt_96_o$speduc] # Invarance 
+dt_96_o[, "0_work":=  as.character(dt_96_o$f02a4a)] # 8 == 喪偶，新結婚，
+dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="4", 7,dt_96_o$"0_work" ) ]
+dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="2", 4, dt_96_o$"0_work" ) ]
+dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="3", 5,dt_96_o$"0_work" ) ]
+dt_96_o[, "0_marstat":= ifelse(dt_96_o$f02a3 ==1, 1, 8) ]
+dt_96_o[, "0_livstat":= ifelse( as.numeric (dt_96_o$f02a3) == 1, 0, 88 ) ]
+dt_96_o[, "0_livwhere":= ifelse( as.numeric (dt_96_o$f02a3) == 1, 0, 88 ) ]
+dt_96_o[, "0_meet":= ifelse( as.numeric (dt_96_o$f02a3) == 1, 0, 88 ) ]
+dt_96_o[, "0_tele":= ifelse( as.numeric (dt_96_o$f02a3) == 1, 0, 88 ) ]
+
+# 更新結婚仔
+dt_96_o[, "0_age":= ifelse(dt_96_o$f02a903 != 88, dt_96_o$f02a903, dt_96_o$"0_age"   )] 
+dt_96_o[, "0_edu":=  ifelse(dt_96_o$f02a11 != 88, dt_96_o$f02a11, dt_96_o$"0_edu"   )] # Invarance 
+dt_96_o[, "0_work":=  ifelse(dt_96_o$f02a12 != 8, dt_96_o$f02a12, dt_96_o$"0_work"   )] # Invarance 
+dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="4", 7,dt_96_o$"0_work" ) ]
+dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="2", 4, dt_96_o$"0_work" ) ]
+dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="3", 5,dt_96_o$"0_work" ) ]
+
+dt_96_o[, "0_marstat":=  ifelse(dt_96_o$f02a3a == 4, 1, dt_96_o$"0_marstat"   )] # Invarance 
+dt_96_o[, "0_livstat":= ifelse( dt_96_o$f02a8 ==1, 0, dt_96_o$"0_livstat") ]
+dt_96_o[, "0_livwhere":=  ifelse( dt_96_o$f02a8 ==1, 0, dt_96_o$"0_livwhere") ]
+dt_96_o[, "0_meet":=  ifelse( dt_96_o$f02a8 ==1, 0, dt_96_o$"0_meet") ]
+dt_96_o[, "0_tele":=  ifelse( dt_96_o$f02a8 ==1, 0, dt_96_o$"0_meet") ]
+
+
+
+
+# Now is their family members
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b510", i), paste0(i ,"_relation"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b60", i), paste0(i ,"_gender"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b70", i), paste0(i ,"_age"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b80", i), paste0(i ,"_edu"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b90", i), paste0(i ,"_work"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b100", i), paste0(i ,"_marstat"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b110", i), paste0(i ,"_livstat"))}
+for(i in 1:9){ setnames(dt_96_o, paste0( "f17b120", i), paste0(i ,"_livwhere"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b130", i), paste0(i ,"_meet"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f17b140", i), paste0(i ,"_tele"))}
+
+# 10 is change
+status<- c("_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
+setnames(dt_96_o, "f17b5110", "10_relation")
+setnames(dt_96_o, paste0( "f17b", 6:14 ,"10"), paste0("10" , status))
+
+#11~19 f22...
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b51", i), paste0(i ,"_relation"))}
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b6", i), paste0(i ,"_gender"))} #1male 2 female
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b7", i), paste0(i ,"_age"))}
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b8", i), paste0(i ,"_edu"))}
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b9", i), paste0(i ,"_work"))}
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b10", i), paste0(i ,"_marstat"))}
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b11", i), paste0(i ,"_livstat"))}
+for(i in 11:20){ setnames(dt_96_o, paste0("f18b12", i), paste0(i ,"_livwhere"))}
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b13", i), paste0(i ,"_meet"))}
+for(i in 11:20){setnames(dt_96_o, paste0( "f18b14", i), paste0(i ,"_tele"))}
+
+#不同住子女
+# f23b1910_ are missing in the original dataset, key determinate for analysis...
+# typo might be f23b19101 -> fb20101
+for(i in 1:9){setnames(dt_96_o, paste0( "fb2010", i), paste0(i+20 ,"_relation"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f19b210", i), paste0(i+20 ,"_gender"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f19b220", i), paste0(i+20 ,"_age"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f19b230", i), paste0(i+20 ,"_edu"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f19b240", i), paste0(i+20 ,"_work"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f19b250", i), paste0(i+20 ,"_marstat"))}
+dt_96_o[, paste0(21:29,"_livstat") := 0, ]
+# dt_96_o[, .SD :=0, .SDcols = paste0(21:29,"_livstat" )]
+# for(i in 1:9){setnames(dt_96_o, paste0( "f23b250", i), paste0(i+20 ,"_livstat"))}
+for(i in 1:9){ setnames(dt_96_o, paste0("f19b260", i), paste0(i+20 ,"_livwhere"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f19b270", i), paste0(i+20 ,"_meet"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "f19b280", i), paste0(i+20 ,"_tele"))}
+
+# 30 
+dt_96_o[, paste0(30:31,"_livstat") := 0, ]
+status<- c("_gender","_age","_edu","_work","_marstat","_livwhere","_meet","_tele")
+setnames(dt_96_o, "fb20110", "30_relation")
+setnames(dt_96_o, paste0( "f19b", 21:28 ,"10"), paste0("30" , status))
+#31
+status<- c("_gender","_age","_edu","_work","_marstat","_livwhere","_meet","_tele")
+setnames(dt_96_o, "fb20111", "31_relation")
+setnames(dt_96_o, paste0( "f20b", 21:28 ,"11"), paste0("31" , status))
+
+
+
+cols<- c(unlist( lapply(paste0("^", 0:31,"_"), function(x){grep(x, names(dt_96_o), value = T)})))
+class(cols)
+fam_96_o<- dt_96_o[, cols, with=FALSE]
+
+
+dt_96_o <- cbind(demo_dt_96_o,adls_dt_96_o,dis_dt_96_o, fam_96_o)
+dt_96_o <- dt_96_o[,"birthyear" := survey_year - rage][, qser_no := paste0(qtype, ser_no)]
+
+d1 <- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD89_99/Data/bkgrdall_v2.sav", to.data.frame=TRUE)
+# find age
+d1<-as.data.table(d1)
+d1[, birthyear:= 1996 - 1911 - d1$AGE96][, qser_no := paste0(QTYPE, SER_NO)]
+alive_96_old <- d1[qser_no %in% dt_96_o$qser_no]
+alive_96_old<- alive_96_old[, c("EDUC","ETHC", "qser_no")]
+setnames(alive_96_old, c("EDUC", "ETHC"), c("educ", "ethnicty"))
+dt_96_o<- alive_96_old[dt_96_o, on="qser_no"]
+dt_96_o[, reduc := dt_96_o$educ][, c("i.ethnicty", "educ") :=NULL]
+
+# 96年多了一個general （總合來說你覺的你今年的身體狀態如何）
+
+dt_96_o[, bath:= ifelse(bath ==8, 0, bath)]
+dt_96_o[, clothes:= ifelse(clothes ==8, 0, clothes)]
+dt_96_o[, dine:= ifelse(dine ==8, 0, dine)]
+dt_96_o[, wakeup:= ifelse(wakeup ==8, 0, wakeup)]
+dt_96_o[, walk_indoor:= ifelse(walk_indoor ==8, 0, walk_indoor)]
+dt_96_o[, WC:= ifelse(WC ==8, 0, WC)]
+
+# 父親、母親、公公、岳父、婆婆、岳母 有特別問，但我覺得好像都在這29個關係中有被登記過了。
+
+
+
+```
+
+
+```{r}          
+
+
+dt_96_y <- data.table(df_c_96_YOUTH)
+dt_96_y <- dt_96_y[, "survey_year":=1996]
+
+
+
+#Demo_96_y:
+demo_96_y <- c("qtype","ser_no","survey_year","f0103","crt1","crt2","f0101","f0102","f02a2","f02a5","f02a10","f04b1","f04b4","f05c3","f11e1","f11e2b","f06c9b","f06c9c","f08c201","f08c21","f08c22")
+
+demo_dt_96_y <- dt_96_y[,c("qtype","ser_no","survey_year","f0103","crt1","crt2","f0101","f0102","f02a2","f02a5","f02a10","f04b1","f04b4","f05c3","f11e1","f11e2","f06c9b","f06c9c","f08c201","f08c21","f08c22","f08c23"),]
+
+
+demo_dt_96_y<- setNames(demo_dt_96_y, c("qtype","ser_no","survey_year","rsex","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport"))
+
+demo_dt_96_y <- add_column(demo_dt_96_y,rage = NA , .after = "rsex" )
+ 
+
+
+phy_dt_96_y <- dt_96_y[,290:296]
+phys_96 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+
+adls_dt_96_y <- dt_96_y[,c("f07c17", "f07c181a","f07c182a","f07c183a","f07c184a","f07c185a","f07c186a")]
+adls_96 <- c("general","bath","clothes","dine","wakeup","walk_indoor","WC")
+
+hadls<- c("bath","clothes","dine","wakeup","walkinside","WC")
+setnames(dt_96_y, c(paste0("f07c18",1:6,"e")), c(paste0("who_help",hadls)))
+
+cols<- grep("^who_help", names(dt_96_y))
+help_adls <- dt_96_y[, .SD, .SDcols=cols ]
+
+
+iadl_dt_96_y <- dt_96_y[,329:335, ]
+
+
+adls_dt_96_y <- cbind(phy_dt_96_y, adls_dt_96_y, iadl_dt_96_y)
+adls_dt_96_y<- setNames(adls_dt_96_y, names)
+adls_dt_96_y <- cbind(adls_dt_96_y, help_adls)
+
+#----------
+#disease 
+which(colnames(dt_96_y) =="f05c41")
+dis_dt_96_y <- dt_96_y[,c("f05c41","f05c42","f05c43","f05c44","f05c45","f05c46","f05c47", "f05c48","f05c49","f06c5a","f06c5b","f06c5c","f06c5d","f06c5e","f06c5f","f06c5g","f06c5h","f06c5i","f06c5j"),]
+dis_96 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","catar","glau","tbc","kiddi","gout","anem","spur","hipbone","brokenbone","headspine")
+
+dis_dt_96_y<- setNames(dis_dt_96_y, dis_96)
+
+```
+
+```{r}
+# fam 96y
+#抓伴侶囉！
+
+
+dt_96_y[, "0_relation":= 2,]
+dt_96_y[, "0_gender":=  ifelse(dt_96_y$f0103 == 1, 2 , 1 )]
+dt_96_y[, "0_age":= 85 - as.numeric(as.character(dt_96_y$f02a1201))] # missing 也是很多
+dt_96_y[, "0_age":= ifelse( dt_96_y$"0_age"== -3, NA, dt_96_y$"0_age" )]  # 去掉88, 98, 99 為不適用與missing
+dt_96_y[, "0_age":= ifelse( dt_96_y$"0_age" %in% c(-13, -14), 999, dt_96_y$"0_age" )]  # 去掉88, 98, 99 為不適用與missing
+dt_96_y[, "0_edu":=  dt_96_y$f02a14]
+dt_96_y[, "0_work":=  as.numeric(as.character(dt_96_y$f02a16))]
+dt_96_y[, "0_work":=  ifelse(dt_96_y$"0_work" ==2 & dt_96_y$f02a16a == 1, 4, dt_96_y$"0_work" ) ]
+dt_96_y[, "0_work":=  ifelse(dt_96_y$"0_work" ==2, 5,dt_96_y$"0_work" ) ]
+dt_96_y[, "0_marstat":= ifelse( as.numeric (dt_96_y$f02a10) == 1, 1, NA) ] # 只取同住伴侶 ，同住非伴侶的關係只有4個，就先略了
+dt_96_y[, "0_livstat":= ifelse( as.numeric (dt_96_y$f02a10a) == 1, 0, NA ) ]
+dt_96_y[, "0_livstat":= ifelse( as.numeric(dt_96_y$f02a10a)== 0, 1, dt_96_y$"0_livstat" ) ]
+dt_96_y[, "0_livstat":= ifelse(dt_96_y$"0_livstat" %nin% c(0,1), dt_96_y$f02a10a, dt_96_y$"0_livstat" ) ]
+dt_96_y[, "0_livwhere":=  ifelse(dt_96_y$"0_livstat" == 0, 0, 9) ]
+dt_96_y[, "0_meet":=  ifelse(dt_96_y$"0_livstat" == 0, 0, dt_96_y$f02a10a2 ) ]
+dt_96_y[, "0_meet":=  ifelse(dt_96_y$f02a10a2 == 3, 99, dt_96_y$"0_meet" ) ]
+dt_96_y[, "0_meet":=  ifelse(dt_96_y$f02a10a2 == 1, 3, dt_96_y$"0_meet" ) ]
+dt_96_y[, "0_meet":=  ifelse(dt_96_y$f02a10a2 == 2, 4, dt_96_y$"0_meet" ) ]
+dt_96_y[, "0_tele":=  ifelse(dt_96_y$"0_livstat" == 0, 0, 99 ) ]
+
+
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b510", i), paste0(i ,"_relation"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b60", i), paste0(i ,"_gender"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b70", i), paste0(i ,"_age"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b80", i), paste0(i ,"_edu"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b90", i), paste0(i ,"_work"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b100", i), paste0(i ,"_marstat"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b110", i), paste0(i ,"_livstat"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b120", i), paste0(i ,"_livwhere"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b130", i), paste0(i ,"_meet"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f21b140", i), paste0(i ,"_tele"))}
+
+# 10 is change
+status<- c("_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
+setnames(dt_96_y, "f21b5110", "10_relation")
+setnames(dt_96_y, paste0( "f21b", 6:14 ,"10"), paste0("10" , status))
+
+#11~19 f22...
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b51", i), paste0(i ,"_relation"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b6", i), paste0(i ,"_gender"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b7", i), paste0(i ,"_age"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b8", i), paste0(i ,"_edu"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b9", i), paste0(i ,"_work"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b10", i), paste0(i ,"_marstat"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b11", i), paste0(i ,"_livstat"))}
+for(i in 11:20){ setnames(dt_96_y, paste0("f22b12", i), paste0(i ,"_livwhere"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b13", i), paste0(i ,"_meet"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "f22b14", i), paste0(i ,"_tele"))}
+
+#不同住子女
+# f23b1910_ are missing in the original dataset, key determinate for analysis...
+# typo might be f23b19101 -> fb19101
+for(i in 1:9){setnames(dt_96_y, paste0( "fb1910", i), paste0(i+20 ,"_relation"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f23b200", i), paste0(i+20 ,"_gender"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f23b210", i), paste0(i+20 ,"_age"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f23b220", i), paste0(i+20 ,"_edu"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f23b230", i), paste0(i+20 ,"_work"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f23b240", i), paste0(i+20 ,"_marstat"))}
+dt_96_y[, paste0(21:29,"_livstat") := 0, ]
+# dt_96_y[, .SD :=0, .SDcols = paste0(21:29,"_livstat" )]
+# for(i in 1:9){setnames(dt_96_y, paste0( "f23b250", i), paste0(i+20 ,"_livstat"))}
+for(i in 1:9){ setnames(dt_96_y, paste0("f23b250", i), paste0(i+20 ,"_livwhere"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f23b260", i), paste0(i+20 ,"_meet"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "f23b270", i), paste0(i+20 ,"_tele"))}
+# omit 2 ppl for 30 and 31
+
+
+# 用lapply重複操作grep，用regular expression 抓出特定的句子
+
+# cols<- c("1_relation", "1_meet")
+cols<- c(unlist( lapply(paste0("^", 0:29,"_"), function(x){grep(x, names(dt_96_y), value = T)})))
+class(cols)
+fam_96_y<- dt_96_y[, cols, with=FALSE]
+
+# 父親、母親、公公、岳父、婆婆、岳母 有特別問，但我覺得好像都在這29個關係中有被登記過了。
+
+Mode <- function(x) {
+ ux <- na.omit(unique(x))
+ ux[which.max(tabulate(match(x, ux)))]
+}
+adls_dt_96_y[, "adl_who_help":= apply(adls_dt_96_y[, .SD, .SDcols = grep("^who_help", names(adls_dt_96_y))], 1, Mode)]
+
+adls_dt_96_y[,adl_who_help:= ifelse(is.na(adl_who_help), 88, adl_who_help)][, iadl_who_help := dt_96_y$f07c19b ]
+adls_dt_96_y[, grep("^who_help", names(adls_dt_96_y)):=NULL, ]
+adls_dt_96_y[, adl_need_help := ifelse( bath %in% c(3,4) | clothes %in% c(3,4) | dine %in% c(3,4) | wakeup %in% c(3,4) | walk_indoor %in% c(3,4) | WC %in% c(3,4)  , 1, 0)][, adl_who_help:= ifelse( adl_who_help ==88 & adl_need_help ==1, 0, adl_who_help )][, iadl_who_help := ifelse(dt_96_y$f07c19a ==0, 0, iadl_who_help)][, adl_need_help:=NULL]
+
+
+
+dt_96_y <- cbind(demo_dt_96_y, adls_dt_96_y, dis_dt_96_y, fam_96_y)
+dt_96_y <- dt_96_y[, "birthyear":= NA][, qser_no := paste0(qtype, ser_no)]
+# find age
+a<- d1[qser_no %in% unique(dt_96_y$qser_no)]
+a<- a[, c('qser_no', 'AGE96')]
+dt_96_y <- a[ dt_96_y, on="qser_no"]
+dt_96_y[, rage:= AGE96][ ,AGE96:= NULL][, birthyear := 1996 -1911 - rage]
+
+# 比96_o 少一個病（攝護腺問題）
+
+dt_96_y[, bath:= ifelse(bath ==8, 0, bath)]
+dt_96_y[, clothes:= ifelse(clothes ==8, 0, clothes)]
+dt_96_y[, dine:= ifelse(dine ==8, 0, dine)]
+dt_96_y[, wakeup:= ifelse(wakeup ==8, 0, wakeup)]
+dt_96_y[, walk_indoor:= ifelse(walk_indoor ==8, 0, walk_indoor)]
+dt_96_y[, WC:= ifelse(WC ==8, 0, WC)]
+```
+
+
+
+```{r}
+library(reshape)
+
+#first deal help ?? 重複??
+liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
+
+cols<- unlist(lapply(0:31, function(x){paste0(x,liv)}))
+cols<- append(c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help'), cols)
+tt<- dt_96_o[, .SD, .SDcols=cols ] 
+
+x<- list( c(paste0(0:31, "_relation")), c(paste0(0:31, "_gender")), c(paste0(0:31, "_age")), c(paste0(0:31,"_edu")), c(paste0(0:31, "_work")), c(paste0(0:31, "_marstat")), c(paste0(0:31, "_livstat")), c(paste0(0:31, "_livwhere")), c(paste0(0:31, "_meet")), c(paste0(0:31, "_tele")))
+
+dt_96o_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","livstat","livwhere","meet","tele"))
+
+dt_96o_reshape <- as.data.table(dt_96o_reshape)
+dt_96o_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
+
+
+
+
+cols<- unlist(lapply(0:29, function(x){paste0(x,liv)}))
+cols<- append(c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help'), cols)
+tt<- dt_96_y[, .SD, .SDcols=cols ] 
+
+x<- list( c(paste0(0:29, "_relation")), c(paste0(0:29, "_gender")), c(paste0(0:29, "_age")), c(paste0(0:29,"_edu")), c(paste0(0:29, "_work")), c(paste0(0:29, "_marstat")), c(paste0(0:29, "_livstat")), c(paste0(0:29, "_livwhere")), c(paste0(0:29, "_meet")), c(paste0(0:29, "_tele")))
+
+dt_96y_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","livstat","livwhere","meet","tele"))
+
+dt_96y_reshape <- as.data.table(dt_96y_reshape)
+dt_96y_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
+
+
+```
+
+```{r}
+
+fam_96 <- rbind(dt_96o_reshape, dt_96y_reshape)
+
+
+fam_96 <-fam_96[gender!= 8] 
+fam_96<- as.data.table(fam_96)
+# gender !=8 & age ==88 ->真的88歲的親屬
+# gender !=8 & edu==88, work==88 -> 6歲以下的親屬
+table(sort(fam_96$livstat))
+
+fam_96[,livstat:= ifelse(fam_96$livstat== 0, 999, livstat)] # 0 改成同住, 1 改成不同住
+fam_96[,livstat:= ifelse(fam_96$livstat== 1, 0, livstat)]
+fam_96[,livstat:= ifelse(fam_96$livstat== 999, 1, livstat)]
+fam_96[,livstat:= ifelse(fam_96$livstat== 3, 996, livstat)] # 3改成工作 , 4改成兵役
+fam_96[,livstat:= ifelse(fam_96$livstat== 4, 3, livstat)]
+fam_96[,livstat:= ifelse(fam_96$livstat== 996, 4, livstat)]
+table(sort(fam_96$livstat))
+
+
+# lapply(fam_96[, .SD, .SDcols= grep("^who_help", names(fam_96))], function(x){replace(x, x==88, NA)})
+# fam_96[, who_helpbath:= ifelse(who_helpbath==88, NA, who_helpbath)]
+# fam_96[, who_helpclothes:= ifelse(who_helpclothes==88, NA, who_helpclothes)]
+# fam_96[, who_helpdine:= ifelse(who_helpdine==88, NA, who_helpdine)]
+# fam_96[, who_helpwakeup:= ifelse(who_helpwakeup==88, NA, who_helpwakeup)]
+# fam_96[, who_helpwalkinside:= ifelse(who_helpwalkinside==88, NA, who_helpwalkinside)]
+# fam_96[, who_helpWC:= ifelse(who_helpWC==88, NA, who_helpWC)]
+
+# # 眾數
+# Mode <- function(x) {
+#  ux <- na.omit(unique(x))
+#  ux[which.max(tabulate(match(x, ux)))]
+# }
+# fam_96[, "adl_who_help":= apply(fam_96[, .SD, .SDcols = grep("^who_help", names(fam_96))], 1, Mode)]
+# 
+# fam_96[,adl_who_help:= ifelse(is.na(adl_who_help), 88, adl_who_help)]
+# fam_96[, grep("^who_help", names(fam_96)):=NULL, ]
+
+fam_96<- fam_96[relationship!=0, ][ !is.na(age) | !is.na(edu)]
+
+
+
+
+```
+
+
+
+
+
+
+
