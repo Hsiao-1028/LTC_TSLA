@@ -1,0 +1,492 @@
+---
+title: "Explore_family members"
+author: "Hsiao"
+date: "8/8/2021"
+output: html_document
+---
+
+```{r}
+
+library("data.table") 
+library("naniar")
+library("plyr")
+library("dplyr")
+library("stringr")
+library("ggplot2")
+library("tidyr")
+library('Hmisc')
+
+```
+
+
+
+```{r}
+
+subject<- read.csv("/Users/Ano/Desktop/HRS_Chao/LTC_TSLA/main_subject_0807.csv")
+fam<- read.csv("/Users/Ano/Desktop/HRS_Chao/LTC_TSLA/family_member_0808.csv")
+
+subject<- as.data.table(subject)
+fam<- as.data.table(fam)
+subject<- subject[subject$survey_year != "1993"]
+
+
+```
+
+
+
+```{r}
+
+s<- as.data.table(table(sort(subject[adl_who_help!=88]$adl_who_help)))
+t<- fam[, main_giver := ifelse( relationship == adl_who_help, 1, 0)][ main_giver ==1] #目前只有match 到 824筆
+t<- as.data.table(table(sort(t$adl_who_help)))
+
+setnames(t, "N", "main_giver_match")
+
+
+sum(s$N) # 1642筆
+s<- s[V1 %nin% c(0, 99)]
+ss<- t[s, on="V1"]
+
+
+
+setnames(ss, "N", "total_number")
+```
+
+
+```{r}
+# check available data 
+subject[, adl_need_help:= ifelse(adl_who_help!=88, 1, 0)]
+s<-table(sort(subject[adl_need_help ==1]$adl_who_help))
+main_taker<- as.data.table(s)
+main_taker[, freq:= N/1642] # 總共1642位 main giver ( incl. 0)
+
+# 1642/19482 # adl_needed_help / all subjects # 8%
+# 8193/93197 # their subject needed adl_needed_help/ all family members # 8%
+
+
+needed<- subject[adl_need_help ==1]$qser_no
+need<- subject[qser_no %in% needed] # 有求助過的人
+length(unique(need$qser_no)) / length( unique(subject$qser_no)) # 17% of the qser_no has need
+needed_fam <- fam[qser_no %in% needed] # 這些人的所有親人, 潛在會被召喚過去的人
+needed_fam[, main_giver := ifelse(relationship == adl_who_help, 1, 0)] #是不是該年度, 該qser_no的主要照顧者
+
+
+sum(needed_fam$main_giver) # 用fam 只能抓到824位主要照顧者 v.s. 總共應該有1642位。 有 818位 missing
+
+# watch<- needed_fam[adl_who_help %nin% c(0,88, 99)][, have_main_giver:= sum(main_giver), by= qser_no]
+needed_fam[, number_of_main_givers:= sum(main_giver), by= qser_no]
+table(sort(needed_fam$number_of_main_givers))# sum = 18215
+
+View(needed_fam[have_main_giver==3])
+
+missing_main_giver<- needed_fam[ number_of_main_givesr ==0] # main_giver 沒有在回報的family member裡面
+missing_main_giver[, qser_no_year := paste(qser_no, survey_year, sep ="_")]
+missing <- missing_main_giver[, unique(.SD), .SDcols = c("qser_no_year", "adl_who_help")][adl_who_help !=88]
+
+check2<- watch[ have_main_giver >0]
+check2[, qser_no_year := paste0(qser_no, survey_year)]
+check2<- check2[, unique(.SD), .SDcols = c("qser_no_year", "adl_who_help")]
+
+ss<-as.data.table(table(sort(missing$adl_who_help)))
+sss<-as.data.table(table(sort(check2$adl_who_help)))
+
+needed_fam[, qser_no_year := paste(qser_no, survey_year, sep ="_")][, have_main_giver := sum(main_giver), by= qser_no_year]
+# 超過一表示是兒女「們」或是... 
+
+check<- needed_fam[, unique(.SD), .SDcols = c("qser_no_year", "have_main_giver")]
+need[,qser_no_year := paste(qser_no, survey_year, sep ="_")]
+check2<- check[need, on= "qser_no_year"]
+check2<- check2[, c("qser_no_year", "adl_who_help", "adl_need_help","have_main_giver")]
+check3<- check2[adl_who_help !=88]
+
+table(sort(check3$have_main_giver))
+sum(is.na(check3$have_main_giver))
+table(sort(needed_fam$have_main_giver))
+
+
+
+
+try1<- copy(subject)
+try1[, qser_no_year:= paste(qser_no, survey_year, sep ="_")]
+fam[, qser_no_year:= paste(qser_no, survey_year, sep ="_")]
+
+fun<- function(i){
+ try1[ qser_no_year ==i , have_main_taker:= ifelse( try1[qser_no_year ==i]$adl_who_help %in% fam[qser_no_year ==i]$relationship, 1, 0 )] 
+}
+
+invisible(lapply(unique(try1$qser_no_year), fun))
+
+try1<- try1[ adl_need_help ==1]
+
+# 可能是漏掉的人們
+table(sort(try1[have_main_taker ==0]$adl_who_help))
+
+
+```
+
+```{r}
+# 多的配偶
+# 應該是再婚
+
+subject[, qser_no_year := paste0(qser_no, survey_year)]
+fam[, qser_no_year := paste0(qser_no, survey_year)]
+
+mar<- subject[, c("qser_no_year", "marstat")]
+
+
+fam<- mar[ fam, on="qser_no_year"]
+
+problematic_spouses <- fam[ marstat ==0 & relationship ==2]
+
+```
+
+
+
+```{r}
+# 前處理
+library(tidyverse)
+library(MASS)
+library(caret)
+library(utils)
+
+subject[, adl_need_help := ifelse(adl_who_help != 88,1, 0)][, adl_need_help := as.character(adl_need_help)]
+subject[, iadl_need_help := ifelse(iadl_who_help != 88,1, 0)][, iadl_need_help := as.character(iadl_need_help)]
+subject[, telephone:= telehphone][, telehphone:=NULL]
+
+# 清掉missing values
+
+test<- copy(subject)
+
+test[, bath:= ifelse(bath == 9, NA, bath)]
+test[, clothes:= ifelse(clothes == 9, NA, clothes)]
+test[, dine:= ifelse(dine == 9, NA, dine)]
+test[, wakeup:= ifelse(wakeup == 9, NA, wakeup)]
+test[, walk_indoor:= ifelse(walk_indoor == 9, NA, walk_indoor)]
+test[, WC:= ifelse(WC == 9, NA, WC)]
+test[, grocery:= ifelse(grocery== 9, NA, grocery)]
+test[, financial:= ifelse(financial == 9, NA, financial)]
+test[, transport:= ifelse(transport == 9, NA, transport)]
+test[, heavywork:= ifelse(heavywork == 9, NA, heavywork)]
+test[, housework:= ifelse(housework == 9, NA, housework)]
+test[, telephone:= ifelse(telephone == 9, NA, telephone)]
+
+completeVec<-complete.cases(test[, .SD, .SDcols =c("bath","clothes","dine","wakeup","walk_indoor","WC","grocery","financial","transport","heavywork","housework","telephone","adl_need_help","iadl_need_help")])
+test<- test[completeVec]
+
+
+```
+
+```{r}
+# PCA analysis on disability
+# 先看一下這些老人的adls, iadls 有什麼cluster 
+
+dis_89 <- as.data.frame(test)
+pca <- prcomp(formula = ~ bath+clothes+dine+wakeup+walk_indoor+ WC+ grocery+ financial+ transport+ walk200+ heavywork+ housework+ telephone, data = dis_89, scale = TRUE) 
+pca
+
+
+plot(pca,         # 放pca
+     type="line", # 用直線連結每個點
+     main="Scree Plot for diseases") # 主標題
+# 用藍線標示出特徵值=1的地方
+abline(h=1, col="blue")# Kaiser eigenvalue-greater-than-one rule
+abline(h=0.7, col="pink")
+ 
+top2_pca.data <- pca$x[, 1:3] #取前四PCA
+top2_pca.data 
+
+# Eigenvalues and its proportion
+vars <- (pca$sdev)^2  
+vars
+props <- vars / sum(vars)    
+props
+
+pca$rotation
+#取前2個主成份的特徵向量：
+top2.pca.eigenvector <- pca$rotation[, 1:3]
+top2.pca.eigenvector
+
+first.pca <- top2.pca.eigenvector[, 1]   #  第一主成份
+second.pca <- top2.pca.eigenvector[, 2]  #  第二主成份
+third.pca <- top2.pca.eigenvector[, 3]  #  第三主成份
+first.pca[order(first.pca, decreasing=TRUE)] 
+second.pca[order(second.pca, decreasing = TRUE)]
+third.pca[order(third.pca, decreasing = TRUE)]
+
+
+
+# 再想一下
+dotchart(first.pca[order(first.pca, decreasing=FALSE)] ,  
+        main="Loading Plot for PC1",                     
+        xlab="Variable Loadings",                      
+        col="red") 
+
+
+
+dotchart(second.pca[order(second.pca, decreasing=FALSE)] ,  
+        main="Loading Plot for PC2",                     
+        xlab="Variable Loadings",                      
+        col="blue") 
+ 
+dotchart(third.pca[order(third.pca, decreasing=FALSE)] ,  
+        main="Loading Plot for PC3",                     
+        xlab="Variable Loadings",                      
+        col="orange")
+
+# 2個cluster好像剛好
+
+# 可見第一個cluster 主要是 bath, WC, walk_indoor ...的比較困難，偏adls 系列
+# 第二個cluster 可見主要是iadl ，尤其是搬重物，大眾運輸上面有困難
+
+# 但也有可能是反映出，老人在哪些方便比較會說出他們有困難! 
+
+```
+
+
+
+```{r}
+# who need adl helps
+# disability: 
+
+completeVec<-complete.cases(test[, .SD, .SDcols =c("bath","clothes","dine","wakeup","walk_indoor","WC","grocery","financial","transport","heavywork","housework","telephone","adl_need_help","iadl_need_help")])
+test<- test[completeVec]
+
+# why not work
+# for ( i in c(adls)){
+#   
+#   s<-s[, i:= ifelse(i ==3, NA, i)]
+# }
+# 
+# lapply(adls, function(i){
+#   s[, i:= ifelse(i ==3, NA, i)]
+# })
+
+# 比起對有需幫忙以及無需幫忙的組別跑PCA， 對需不需要幫忙跑 LDA ( linear discriminant analysis) 或許才是分組的關鍵
+
+
+# 前處理
+set.seed(123)
+training.samples <- test$adl_need_help %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.data <- test[training.samples, ]
+test.data <- test[-training.samples, ]
+
+# Remark : normalized is not needed
+# Estimate preprocessing parameters
+# preproc.param <- train.data %>% 
+#   preProcess(method = c("center", "scale"))
+# # Transform the data using the estimated parameters
+# train.transformed <- preproc.param %>% predict(train.data)
+# test.transformed <- preproc.param %>% predict(test.data)
+
+train.transformed <- train.data
+test.transformed <- test.data
+
+model1 <- lda(adl_need_help~ bath+clothes+dine+wakeup+walk_indoor+WC, data = train.transformed)
+model1
+
+plot(model1)
+# Make predictions
+predictions <- model1 %>% predict(test.transformed)
+
+# Model accuracy
+mean(predictions$class==test.transformed$adl_need_help)
+
+```
+
+
+```{r}
+# who need iadl helps
+# disability: 
+library(tidyverse)
+library(MASS)
+library(caret)
+library(utils)
+
+# 清掉missing values
+test[, grocery:= ifelse(grocery== 9, NA, grocery)]
+test[, financial:= ifelse(financial == 9, NA, financial)]
+test[, transport:= ifelse(transport == 9, NA, transport)]
+test[, heavywork:= ifelse(heavywork == 9, NA, heavywork)]
+test[, housework:= ifelse(housework == 9, NA, housework)]
+test[, telephone:= ifelse(telephone == 9, NA, telephone)]
+
+# 比起對有需幫忙以及無需幫忙的組別跑PCA， 對需不需要幫忙跑 LDA ( linear discriminant analysis) 或許才是分組的關鍵
+
+
+# 前處理
+set.seed(123)
+training.samples <- test$iadl_need_help %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.data <- test[training.samples, ]
+test.data <- test[-training.samples, ]
+
+# Remark : normalized is not needed
+# Estimate preprocessing parameters
+# preproc.param <- train.data %>% 
+#   preProcess(method = c("center", "scale"))
+# # Transform the data using the estimated parameters
+# train.transformed <- preproc.param %>% predict(train.data)
+# test.transformed <- preproc.param %>% predict(test.data)
+
+train.transformed <- train.data
+test.transformed <- test.data
+
+
+model2 <- lda(iadl_need_help~ grocery+ financial+ transport+ walk200+ heavywork+ housework+ telephone, data = train.transformed)
+model2
+
+plot(model2)
+# Make predictions
+predictions <- model2 %>% predict(test.transformed)
+
+# Model accuracy
+mean(predictions$class==test.transformed$iadl_need_help)
+
+```
+
+```{r}
+# what diseases causes adls_need_help
+
+test[, hibp:= ifelse(hibp >2, NA, hibp)]
+test[, diab:= ifelse(diab >2, NA, diab)]
+test[, hrtpr:= ifelse(hrtpr >2, NA, hrtpr)]
+test[, strok:= ifelse(strok >2, NA, strok)]
+test[, cancer:= ifelse(cancer >2, NA, cancer)]
+test[, broh:= ifelse(broh >2, NA, broh)]
+test[, arth:= ifelse(arth >2, NA, arth)]
+test[, ulcer:= ifelse(ulcer >2, NA, ulcer)]
+test[, livpr:= ifelse(livpr >2, NA, livpr)]
+test[, catar:= ifelse(catar >2, NA, catar)]
+test[, kiddi:= ifelse(kiddi >2, NA, kiddi)]
+test[, gout:= ifelse(gout >2, NA, gout)]
+test[, spur:= ifelse(spur >2, NA, spur)]
+test[, hipbone:= ifelse(hipbone >2, NA, hipbone)]
+
+
+completeVec<-complete.cases(test[, .SD, .SDcols=c ("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","catar","kiddi","gout","spur","hipbone")])
+test<- test[completeVec]
+
+# 前處理
+set.seed(123)
+training.samples <- test$adl_need_help %>%
+  createDataPartition(p = 0.9, list = FALSE)
+train.data <- test[training.samples, ]
+test.data <- test[-training.samples, ]
+
+
+train.transformed <- train.data
+test.transformed <- test.data
+
+model3 <- lda(adl_need_help~ hibp+ strok+ cancer+ broh+ arth+ ulcer+ livpr+ catar+ kiddi+ gout+ spur+ hipbone, data = train.transformed)
+model3
+
+plot(model3)
+# Make predictions
+predictions <- model3 %>% predict(test.transformed)
+
+# Model accuracy
+mean(predictions$class==test.transformed$adl_need_help)
+
+
+model4 <- lda(iadl_need_help~ hibp+ strok+ cancer+ broh+ arth+ ulcer+ livpr+ catar+ kiddi+ gout+ spur+ hipbone, data = train.transformed)
+model4
+
+plot(model4)
+# Make predictions
+predictions <- model4 %>% predict(test.transformed)
+
+# Model accuracy
+mean(predictions$class==test.transformed$iadl_need_help)
+
+
+
+model3  # adls -> 中風, 髖骨骨折, 癌症, 支氣管疾病... 
+model4 # iadls ->跟上面差不多
+```
+```{r}
+# 誰被抓去照顧老人？
+
+# 問題點1 ：是哪個媳婦被抓去（e.g. 媳婦們）
+
+table(sort(fam$adl_who_help))
+table(sort(fam$iadl_who_help))
+
+
+
+try<- copy(fam)
+try[, main_care_taker:= ifelse(relationship == adl_who_help, 1, 0)]
+try[, main_iadl_care_taker:= ifelse(relationship == iadl_who_help, 1, 0)]
+
+
+# 有點慘啊只有824個 main care taker ... 的資料
+sum(try$main_care_taker)
+sum(try$main_iadl_care_taker)
+
+# 清掉一部分的資料
+table(sort(try$tele))
+try[, edu:= ifelse( edu %in% c(91, 92), 12, edu)][, edu:= ifelse(edu == 90, 1, edu)]
+try[, workstat:= ifelse( work %in% c(0,9,98,99) ,NA, 0)][, workstat:= ifelse( work %in% c(1,2,3,6,7) ,1,workstat)]
+try[, marstat:= ifelse( marstat %in% c(1,2), 1, 0)]
+try[, livstat := ifelse( livstat %in% c(7,8,9), NA, livstat)][, livstat:= ifelse(livstat>1, 1, livstat)]
+try[, livwhere := ifelse( livwhere %in% c(9,88), NA, livwhere)]
+try[, meet := ifelse( meet %in% c(9, 91, 97, 98, 99), NA, meet)]
+try[, tele := ifelse( meet %in% c(9, 91, 97, 98, 99), NA, tele)]
+
+completeVec<-complete.cases(try[, .SD, .SDcols=c("gender","age","edu","workstat","marstat","livstat","livwhere","meet","tele")])
+try<- try[completeVec]
+
+set.seed(123)
+training.samples <- try$main_care_taker %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.data <- try[training.samples, ]
+test.data <- try[-training.samples, ]
+
+# Remark : normalized is not needed
+# Estimate preprocessing parameters
+# preproc.param <- train.data %>% 
+#   preProcess(method = c("center", "scale"))
+# # Transform the data using the estimated parameters
+train.transformed <- train.data
+test.transformed <- test.data
+
+fam_model1 <- lda(main_care_taker~ gender + age + edu + workstat + marstat+ livstat+ livwhere+ meet+ tele, data = train.transformed)
+fam_model1
+
+plot(fam_model1)
+# Make predictions
+predictions <- fam_model1 %>% predict(test.transformed)
+
+# Model accuracy
+mean(predictions$class==test.transformed$main_care_taker)
+
+
+
+```
+
+
+```{r}
+
+table(sort(subject$adl_who_help))
+table(sort(subject$adl_need_help))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

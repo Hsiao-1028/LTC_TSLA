@@ -98,6 +98,11 @@ dt_99[, "0_livwhere":= 0]
 dt_99[, "0_meet":= 0]
 dt_99[, "0_tele":= 0]
 
+# 新增的配偶
+dt_99[ a1a == "4", "0_gender":= ifelse(dt_99[ a1a == "4"]$rsex ==1, 2, 1)] 
+dt_99[a1a =="4", "0_age":= as.numeric( dt_99[ a1a =="4"]$a7_2)]
+dt_99[a1a =="4", "0_edu":= as.numeric(dt_99[a1a == "4"]$a9)]
+
 # 同住子女 (6)
 # No.6 is missing in the data set
 for(i in 1:6){setnames(dt_99, paste0( "b5_0", i), paste0(i ,"_relation"))}

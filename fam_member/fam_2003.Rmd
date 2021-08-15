@@ -166,10 +166,10 @@ dt_03y[, "0_work":=  ifelse(dt_03y$"0_work" %in% c(4, 6), 333, dt_03y$"0_work" )
 dt_03y[, "0_work":=  ifelse(dt_03y$"0_work" %in% c(5), 4,dt_03y$"0_work" ) ]
 dt_03y[, "0_work":=  ifelse(dt_03y$"0_work" %in% c(333), 5,dt_03y$"0_work" ) ]
 dt_03y[, "0_marstat":= 1]
-dt_03y[, "0_livstat":= 0]
-dt_03y[, "0_livwhere":= 0]
-dt_03y[, "0_meet":= 0]
-dt_03y[, "0_tele":= 0]
+dt_03y[, "0_livstat":= 8][a13 == "1", "0_livstat":= ifelse(a13a == "1", 0, 1)]
+dt_03y[, "0_livwhere":= 0]["0_livstat" == 1, "0_livwhere" := 99]
+dt_03y[, "0_meet":= 0]["0_livstat" == 1, "0_meet" := 99]
+dt_03y[, "0_tele":= 0]["0_livstat" == 1, "0_tele" := 99]
 
 
 
@@ -270,10 +270,19 @@ dt_03o[, "0_work":=  ifelse(dt_03o$"0_work" %in% c(3), 7,dt_03o$"0_work" ) ]
 dt_03o[, "0_work":=  ifelse(dt_03o$"0_work" %in% c(4, 6), 5, dt_03o$"0_work" ) ]
 dt_03o[, "0_work":=  ifelse(dt_03o$"0_work" %in% c(5), 4,dt_03o$"0_work" ) ]
 dt_03o[, "0_marstat":= 1]
-dt_03o[, "0_livstat":= 0]
+dt_03o[, "0_livstat":= 0][a1a =="1", "0_livstat":= ifelse(a2a == 1, 0, 1)]
 dt_03o[, "0_livwhere":= 0]
-dt_03o[, "0_meet":= 0]
+dt_03o[, "0_meet":= 0][a1a =="1" & "0_livstat" == "1", "0_livstat":= as.numeric(as.character(a2c))]
 dt_03o[, "0_tele":= 0]
+
+# 新結婚的人
+dt_03o[ a1a =="4" , "0_gender":= ifelse(dt_03o[a1a =="4"]$sex ==1, 2, 1)]
+dt_03o[ a1a =="4" , "0_age":= as.numeric( as.character(a73))]
+dt_03o[ a1a =="4" , "0_edu":= as.numeric( as.character(a9))]
+
+
+
+
 
 
 

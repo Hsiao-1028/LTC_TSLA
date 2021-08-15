@@ -228,7 +228,6 @@ dt_96_o[, WC:= ifelse(WC ==8, 0, WC)]
 
 ```{r}          
 
-
 dt_96_y <- data.table(df_c_96_YOUTH)
 dt_96_y <- dt_96_y[, "survey_year":=1996]
 
@@ -339,7 +338,7 @@ for(i in 1:9){setnames(dt_96_y, paste0( "f23b210", i), paste0(i+20 ,"_age"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f23b220", i), paste0(i+20 ,"_edu"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f23b230", i), paste0(i+20 ,"_work"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f23b240", i), paste0(i+20 ,"_marstat"))}
-dt_96_y[, paste0(21:29,"_livstat") := 0, ]
+dt_96_y[, paste0(21:30,"_livstat") := 0, ]
 # dt_96_y[, .SD :=0, .SDcols = paste0(21:29,"_livstat" )]
 # for(i in 1:9){setnames(dt_96_y, paste0( "f23b250", i), paste0(i+20 ,"_livstat"))}
 for(i in 1:9){ setnames(dt_96_y, paste0("f23b250", i), paste0(i+20 ,"_livwhere"))}
@@ -347,11 +346,13 @@ for(i in 1:9){setnames(dt_96_y, paste0( "f23b260", i), paste0(i+20 ,"_meet"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f23b270", i), paste0(i+20 ,"_tele"))}
 # omit 2 ppl for 30 and 31
 
-
+setnames(dt_96_y, c("fb19110","f23b2010","f23b2110","f23b2210","f23b2310","f23b2410","f23b2510","f23b2610","f23b2710"),c("30_relation","30_gender","30_age","30_edu","30_work","30_marstat","30_livwhere","30_meet","30_tele"))
 # 用lapply重複操作grep，用regular expression 抓出特定的句子
 
+
+
 # cols<- c("1_relation", "1_meet")
-cols<- c(unlist( lapply(paste0("^", 0:29,"_"), function(x){grep(x, names(dt_96_y), value = T)})))
+cols<- c(unlist( lapply(paste0("^", 0:30,"_"), function(x){grep(x, names(dt_96_y), value = T)})))
 class(cols)
 fam_96_y<- dt_96_y[, cols, with=FALSE]
 
@@ -409,11 +410,11 @@ dt_96o_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
 
 
 
-cols<- unlist(lapply(0:29, function(x){paste0(x,liv)}))
+cols<- unlist(lapply(0:30, function(x){paste0(x,liv)}))
 cols<- append(c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help'), cols)
 tt<- dt_96_y[, .SD, .SDcols=cols ] 
 
-x<- list( c(paste0(0:29, "_relation")), c(paste0(0:29, "_gender")), c(paste0(0:29, "_age")), c(paste0(0:29,"_edu")), c(paste0(0:29, "_work")), c(paste0(0:29, "_marstat")), c(paste0(0:29, "_livstat")), c(paste0(0:29, "_livwhere")), c(paste0(0:29, "_meet")), c(paste0(0:29, "_tele")))
+x<- list( c(paste0(0:30, "_relation")), c(paste0(0:30, "_gender")), c(paste0(0:30, "_age")), c(paste0(0:30,"_edu")), c(paste0(0:30, "_work")), c(paste0(0:30, "_marstat")), c(paste0(0:30, "_livstat")), c(paste0(0:30, "_livwhere")), c(paste0(0:30, "_meet")), c(paste0(0:30, "_tele")))
 
 dt_96y_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","livstat","livwhere","meet","tele"))
 

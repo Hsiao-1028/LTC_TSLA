@@ -4,6 +4,8 @@ author: "Hsiao"
 date: "6/30/2021"
 output: html_document
 ---
+
+
 ```{r}
 # packages 
 library("data.table") 
@@ -103,7 +105,7 @@ dis_dt_07<- setNames(dis_dt_07, dis_07)
 
 ```{r}
 # fam 
-# original 6, 16,17, 30 appear in codebook but not data -> I omit them (not yet done)
+# original 6, 16,17, 30 appear in code book but not data -> I omit them (not yet done) ???? 
 
 
 # 來抓伴侶！
@@ -117,11 +119,11 @@ setnames(ss, c("ID", "0_age", "0_edu"), c("ID", "03age", "03edu"))
 dt_07<- ss[dt_07, on="ID"]
 
 # 0_ 為伴侶資料
-# 一樣沒更新新結婚的
+
 dt_07[, "0_relation":= 2,]
 dt_07[, "0_gender":=  ifelse(dt_07$cvr1 == 1, 2 , 1 )]
-dt_07[, "0_gender":=  ifelse(dt_07$a1_1 %in% c(2,3,9), 8 , dt_07$"0_gender" )]
-dt_07[, "0_age":= dt_07$"03age"+4]
+dt_07[, "0_gender":=  ifelse(dt_07$a1_2 %in% c(3,4,5,6,8,9), 8 , dt_07$"0_gender" )]
+dt_07[, "0_age":= dt_07$"03age"+4]["0_age" > 150, "0_age":= 999]
 dt_07[, "0_edu":= dt_07$"03edu"]
 dt_07[, "0_work":= as.character(dt_07$e20)]
 dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(1,2), 1,dt_07$"0_work" ) ]
@@ -131,11 +133,15 @@ dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(5), 4,dt_07$"0_work" ) ]
 dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(333), 5,dt_07$"0_work" ) ]
 
 dt_07[, "0_marstat":= 1]
-dt_07[, "0_livstat":= 0]
+dt_07[, "0_livstat":= 0][a1a =="1", "0_livstat":= ifelse(a2a =="1", 0, 1)]
 dt_07[, "0_livwhere":= 0]
-dt_07[, "0_meet":= 0]
+dt_07[, "0_meet":= 0][a1a =="1", "0_meet":= as.numeric(as.character(a2c))]
 dt_07[, "0_tele":= 0]
 
+# 更新結婚仔
+dt_07[a1a == "4", "0_gender":=  ifelse(dt_07[a1a =="4"]$cvr1 == 1, 2 , 1 )]
+dt_07[a1a == "4", "0_age":=  as.numeric(as.character(a7_3))]
+dt_07[a1a == "4", "0_edu":=  as.numeric(as.character(a9))]
 
 
 # 同住子女
@@ -179,20 +185,20 @@ for(i in 1:9){setnames(dt_07, paste0( "b19_", i), paste0(i+17 ,"_edu"))}
 for(i in 1:9){setnames(dt_07, paste0( "b20_", i), paste0(i+17 ,"_work"))}
 for(i in 1:9){setnames(dt_07, paste0( "b21_", i), paste0(i+17 ,"_marstat"))}
 
-for(i in 10:13){setnames(dt_07, paste0( "b16_", i), paste0(i+17 ,"_relation"))}
-for(i in 10:13){setnames(dt_07, paste0( "b17_", i), paste0(i+17 ,"_gender"))}
-for(i in 10:13){setnames(dt_07, paste0( "b18_", i), paste0(i+17 ,"_age"))}
-for(i in 10:13){setnames(dt_07, paste0( "b19_", i), paste0(i+17 ,"_edu"))}
-for(i in 10:13){setnames(dt_07, paste0( "b20_", i), paste0(i+17 ,"_work"))}
-for(i in 10:13){setnames(dt_07, paste0( "b21_", i), paste0(i+17 ,"_marstat"))}
-dt_07[, paste0(18:30, "_livstat"):= 0, ] #0 = 住在一起
-dt_07[, paste0(18:30, "_livwhere"):= 0, ] #0 = 住在一起
-dt_07[, paste0(18:30, "_meet"):= 0, ] #0 = 住在一起
-dt_07[, paste0(18:30, "_tele"):= 0, ] #0 = 住在一起
+for(i in 10:17){setnames(dt_07, paste0( "b16_", i), paste0(i+17 ,"_relation"))}
+for(i in 10:17){setnames(dt_07, paste0( "b17_", i), paste0(i+17 ,"_gender"))}
+for(i in 10:17){setnames(dt_07, paste0( "b18_", i), paste0(i+17 ,"_age"))}
+for(i in 10:17){setnames(dt_07, paste0( "b19_", i), paste0(i+17 ,"_edu"))}
+for(i in 10:17){setnames(dt_07, paste0( "b20_", i), paste0(i+17 ,"_work"))}
+for(i in 10:17){setnames(dt_07, paste0( "b21_", i), paste0(i+17 ,"_marstat"))}
+dt_07[, paste0(18:34, "_livstat"):= 0, ] #0 = 住在一起
+dt_07[, paste0(18:34, "_livwhere"):= 0, ] #0 = 住在一起
+dt_07[, paste0(18:34, "_meet"):= 0, ] #0 = 住在一起
+dt_07[, paste0(18:34, "_tele"):= 0, ] #0 = 住在一起
 
 
 
-cols<- c(unlist( lapply(paste0("^", 0:30,"_"), function(x){grep(x, names(dt_07), value = T)})))
+cols<- c(unlist( lapply(paste0("^", 0:34,"_"), function(x){grep(x, names(dt_07), value = T)})))
 class(cols)
 fam_07<- dt_07[, cols, with=FALSE ]
 
