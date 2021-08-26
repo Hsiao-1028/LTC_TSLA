@@ -21,7 +21,7 @@ library("tibble")
 
 ```{r}
 library(data.table)
-data = load("/Users/Ano/Desktop/HRS_Chao/data_merge.RData")
+load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
 
 ```
 
@@ -44,7 +44,7 @@ sort(table(dt_07$c3_1))
 sort(table(dt_07$c3c_1))
 # missing value of current disease is because he did not have the histroy
 
-demo_07<-c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr2","cvr5","reduc","ethnicty","a1_1","b1_1","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36")
+demo_07<-c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr2","cvr5","reduc","ethnicty","a1_1","b1_5","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36")
 
 # b15 -- ntothh ( omit partners and children), I encode b22 to includ all members living in this house
 # c12c 從住院主因變成了最近一次住院是為什麼
@@ -53,7 +53,7 @@ demo_07<-c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr2
 # 有身高體重
 
 which(colnames(dt_07) =="crt1")
-demo_dt_07 <- dt_07[,c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr4","cvr5","reduc","ethnicty","a1_1","b1_1","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36"),]
+demo_dt_07 <- dt_07[,c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr4","cvr5","reduc","ethnicty","a1_1","b1_5","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36"),]
 #ntothh exclude parners and childrens
 # e6 is the work type
 # 有身高體重了
@@ -133,6 +133,7 @@ dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(5), 4,dt_07$"0_work" ) ]
 dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(333), 5,dt_07$"0_work" ) ]
 
 dt_07[, "0_marstat":= 1]
+dt_07[, "0_children":= as.numeric(as.character(b1_5))]
 dt_07[, "0_livstat":= 0][a1a =="1", "0_livstat":= ifelse(a2a =="1", 0, 1)]
 dt_07[, "0_livwhere":= 0]
 dt_07[, "0_meet":= 0][a1a =="1", "0_meet":= as.numeric(as.character(a2c))]
@@ -151,6 +152,7 @@ for(i in 1:6){setnames(dt_07, paste0( "b7_", i), paste0(i ,"_age"))}
 for(i in 1:6){setnames(dt_07, paste0( "b8_", i), paste0(i ,"_edu"))}
 for(i in 1:6){setnames(dt_07, paste0( "b9_", i), paste0(i ,"_work"))}
 for(i in 1:6){setnames(dt_07, paste0( "b10_", i), paste0(i ,"_marstat"))}
+for(i in 1:6){setnames(dt_07, paste0( "b10a_", i), paste0(i ,"_children"))}
 dt_07[, paste0(1:6, "_livstat"):= 0, ] #0 = 住在一起
 dt_07[, paste0(1:6, "_livwhere"):= 0, ] #0 = 住在一起
 dt_07[, paste0(1:6, "_meet"):= 0, ] #0 = 住在一起
@@ -164,6 +166,7 @@ for(i in 11:21){setnames(dt_07, paste0( "b7_", i), paste0(i-4 ,"_age"))}
 for(i in 11:21){setnames(dt_07, paste0( "b8_", i), paste0(i-4 ,"_edu"))}
 for(i in 11:21){setnames(dt_07, paste0( "b9_", i), paste0(i-4 ,"_work"))}
 for(i in 11:21){setnames(dt_07, paste0( "b10_", i), paste0(i-4 ,"_marstat"))}
+for(i in 11:21){setnames(dt_07, paste0( "b10a_", i), paste0(i-4 ,"_children"))}
 for(i in 11:21){setnames(dt_07, paste0( "b11_", i), paste0(i-4 ,"_livstat"))}
 for(i in 11:21){setnames(dt_07, paste0( "b12_", i), paste0(i-4 ,"_livwhere"))}
 for(i in 11:21){setnames(dt_07, paste0( "b13_", i), paste0(i-4 ,"_meet"))}
@@ -191,6 +194,7 @@ for(i in 10:17){setnames(dt_07, paste0( "b18_", i), paste0(i+17 ,"_age"))}
 for(i in 10:17){setnames(dt_07, paste0( "b19_", i), paste0(i+17 ,"_edu"))}
 for(i in 10:17){setnames(dt_07, paste0( "b20_", i), paste0(i+17 ,"_work"))}
 for(i in 10:17){setnames(dt_07, paste0( "b21_", i), paste0(i+17 ,"_marstat"))}
+dt_07[, paste0(18:34, "_children"):= 99, ] #0 = 住在一起
 dt_07[, paste0(18:34, "_livstat"):= 0, ] #0 = 住在一起
 dt_07[, paste0(18:34, "_livwhere"):= 0, ] #0 = 住在一起
 dt_07[, paste0(18:34, "_meet"):= 0, ] #0 = 住在一起
@@ -207,7 +211,7 @@ dt_07 <- cbind(demo_dt_07, adls_dt_07, dis_dt_07, fam_07)
 dt_07[,qser_no := paste0(qtype, ser_no)]
 
 
-d5<- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD07/DATA/comvarn_v2.sav", to.data.frame = TRUE)
+d5<- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/BKGRD/BKGRD07/DATA/comvarn_v2.sav", to.data.frame = TRUE)
 d5<- as.data.table(d5)
 names(d5)<- tolower(names(d5))
 d5<- d5[, qser_no:= paste0(qtype, ser_no)][, c('qser_no','educ07','ethc07','crt1', 'crt2','age07s')]
@@ -220,15 +224,15 @@ dt_07[, reduc := ethc07][, rage:= age07s][, ethnicty := ethc07][, c('educ07', 'e
 ```{r}
 library(reshape)
 
-liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
+liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_children","_livstat","_livwhere","_meet","_tele")
 
 cols<- unlist(lapply(0:30, function(x){paste0(x,liv)}))
 cols<- append(c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help'), cols)
 tt<- dt_07[, .SD, .SDcols=cols ] 
 
-x<- list( c(paste0(0:30, "_relation")), c(paste0(0:30, "_gender")), c(paste0(0:30, "_age")), c(paste0(0:30,"_edu")), c(paste0(0:30, "_work")), c(paste0(0:30, "_marstat")), c(paste0(0:30, "_livstat")), c(paste0(0:30, "_livwhere")), c(paste0(0:30, "_meet")), c(paste0(0:30, "_tele")))
+x<- list( c(paste0(0:30, "_relation")), c(paste0(0:30, "_gender")), c(paste0(0:30, "_age")), c(paste0(0:30,"_edu")), c(paste0(0:30, "_work")), c(paste0(0:30, "_marstat")), c(paste0(0:30, "_children")), c(paste0(0:30, "_livstat")), c(paste0(0:30, "_livwhere")), c(paste0(0:30, "_meet")), c(paste0(0:30, "_tele")))
 
-dt_07_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","livstat","livwhere","meet","tele"))
+dt_07_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","children","livstat","livwhere","meet","tele"))
 
 dt_07_reshape <- as.data.table(dt_07_reshape)
 dt_07_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
@@ -249,6 +253,9 @@ test[,age:= as.numeric(as.character(age))]
 test[,edu:= as.numeric(as.character(edu))]
 test[,work:= as.numeric(as.character(work))]
 test[,marstat:= as.numeric(as.character(marstat))]
+test[, marstat := ifelse( marstat== 88, 8, marstat)]
+test[,children:= as.numeric(as.character(children))]
+test[, children := ifelse( marstat %in% c(6,8), 88, children)]
 test[,livstat:= as.numeric(as.character(livstat))]
 test[,livwhere:= as.numeric(as.character(livwhere))]
 test[, meet:= as.numeric(as.character(meet))]
@@ -271,7 +278,7 @@ table(sort(test$adl_who_help))
 # test[, edu:= ifelse(edu ==90 & work==88 ,88 , edu)]
 
 
-
+table(sort(test$children))
 fam_07<-test
 
 ```
