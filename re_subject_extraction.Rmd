@@ -26,7 +26,7 @@ library("tibble")
 # 1989 
 library(data.table)
 
-data = load("/Users/Ano/Desktop/HRS_Chao/data_merge.RData")
+data = load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
 # there are dataframes, now turn into datatable
 #elder03 = data.table(df_c_03_ELDER)
 # x <-elder03[sex ==1 & mail ==1,]
@@ -61,7 +61,7 @@ dt_93 <- dt_93[, "frqsport":= NA]
 dt_93<- dt_93[, "birthyear":=NA]
 
 
-d2<- read.spss("/Users/Ano/Desktop/HRS_Chao/ELDATA/ELDATA93/SPSS/t93back.sav", to.data.frame=TRUE)
+d2<- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/ELDATA/ELDATA93/SPSS/t93back.sav", to.data.frame=TRUE)
 names(d2) <- tolower(names(d2))
 demo_dt_93 <- dt_93[,c("qtype","ser_no","survey_year","rsex","rage","crt1","crt2","dwell93","dwell2","reduc","ethnicty","marstat","b6child","b7","c53","curwork","c25b1","d1boccup","c25c1","c43","c44","c46","frqsport"),]
 
@@ -254,7 +254,7 @@ for (i in colnames(dt_96_o)){
 }
 
 
-d1 <- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD89_99/Data/bkgrdall_v2.sav", to.data.frame=TRUE)
+d1 <- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/BKGRD/BKGRD89_99/Data/bkgrdall_v2.sav", to.data.frame=TRUE)
 # find age
 d1<-as.data.table(d1)
 d1[, birthyear:= 1996 - 1911 - d1$AGE96][, qser_no := paste0(QTYPE, SER_NO)]
@@ -539,14 +539,14 @@ dt_03o <- dt_03o[,"rethnicty":= NA]
 dt_03o <- dt_03o[,c("crt1","crt2"):= NA]
 dt_03o <- dt_03o[,c("othpres"):= NA]
 
-demo_03o <-c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_1","b22","c1","rwstat","e6","c12b","c12c","c26","c27","c28","c29")
+demo_03o <-c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_5","b22","c1","rwstat","e6","c12b","c12c","c26","c27","c28","c29")
 
 # b15 -- ntothh ( omit partners and children), I encode b22 to includ all members living in this house
 # c12c 從住院主因變成了最近一次住院是為什麼
 # c26 cursomke ** 以前沒有的但我覺得蠻重要 99 96好像也有 可以考慮放
 # c29 cursport ** 可考慮要不要放
 
-demo_dt_03o <- dt_03o[,c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_1","b22","c1","e1_2","e6","c12b","c12c","c26","c27","c28","c29"),]
+demo_dt_03o <- dt_03o[,c("qtype","ser_no","survey_year","sex","crt1","crt2","type","area","reduc","rethnicty","a192","b1_5","b22","c1","e1_2","e6","c12b","c12c","c26","c27","c28","c29"),]
 #ntothh exclude parners and childrens
 # e6 is the work type
 # 有身高體重了
@@ -636,7 +636,7 @@ dis_dt_03o<- setNames(dis_dt_03o, dis_03o)
 dt_03o <- cbind(demo_dt_03o, adls_dt_03o, dis_dt_03o)
 dt_03o <- dt_03o[, "birthyear":= NA][, qser_no := paste0(qtype, ser_no)]
 
-d3<- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD03/DATA/bkgrd_ab_v2.sav", to.data.frame=TRUE)
+d3<- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/BKGRD/BKGRD03/DATA/bkgrd_ab_v2.sav", to.data.frame=TRUE)
 names(d3)<- tolower(names(d3))
 d3<- as.data.table(d3)
 
@@ -760,7 +760,7 @@ dt_03y <- cbind(demo_dt_03y, adls_dt_03y, dis_dt_03y)
 dt_03y[, qser_no := paste0(qtype, ser_no)]
 
 
-d4<- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD03/DATA/bkgrd_c_v2.sav", to.data.frame=TRUE)
+d4<- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/BKGRD/BKGRD03/DATA/bkgrd_c_v2.sav", to.data.frame=TRUE)
 names(d4)<- tolower(names(d4))
 d4<- as.data.table(d4)
 
@@ -787,7 +787,7 @@ sort(table(dt_07$c3_1))
 sort(table(dt_07$c3c_1))
 # missing value of current disease is because he did not have the histroy
 
-demo_07<-c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr2","cvr5","reduc","ethnicty","a1_1","b1_1","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36")
+demo_07<-c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr2","cvr5","reduc","ethnicty","a1_1","b1_5","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36")
 
 # b15 -- ntothh ( omit partners and children), I encode b22 to includ all members living in this house
 # c12c 從住院主因變成了最近一次住院是為什麼
@@ -796,7 +796,7 @@ demo_07<-c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr2
 # 有身高體重
 
 which(colnames(dt_07) =="crt1")
-demo_dt_07 <- dt_07[,c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr4","cvr5","reduc","ethnicty","a1_1","b1_1","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36"),]
+demo_dt_07 <- dt_07[,c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr4","cvr5","reduc","ethnicty","a1_1","b1_5","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36"),]
 #ntothh exclude parners and childrens
 # e6 is the work type
 # 有身高體重了
@@ -845,7 +845,7 @@ dt_07 <- cbind(demo_dt_07, adls_dt_07, dis_dt_07)
 dt_07[,qser_no := paste0(qtype, ser_no)]
 
 
-d5<- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD07/DATA/comvarn_v2.sav", to.data.frame = TRUE)
+d5<- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/BKGRD/BKGRD07/DATA/comvarn_v2.sav", to.data.frame = TRUE)
 d5<- as.data.table(d5)
 names(d5)<- tolower(names(d5))
 d5<- d5[, qser_no:= paste0(qtype, ser_no)][, c('qser_no','educ07','ethc07','crt1', 'crt2','age07s')]
@@ -870,6 +870,7 @@ table(sort(dt$marstat))
 # write.table(dt, file = "main_subject_0801.csv", sep = ",")
 
 ```
+
 ```{r}
 # dt2 有改過一些變數（簡化）
 
@@ -950,7 +951,7 @@ dt2[, brokenbone:= as.numeric( as.character(dt2$brokenbone))][, brokenbone := if
 dt2[, headspine:= as.numeric( as.character(dt2$headspine))][, headspine := ifelse( headspine %in% c(2,8), 0, headspine)]
 dt2[, prost:= as.numeric( as.character(dt2$prost))][, prost := ifelse( prost %in% c(2,8), 0, prost)]
 
-write.table(dt2, file = "main_subject_0807.csv", sep = ",")
+write.table(dt2, file = "main_subject_0820.csv", sep = ",") # last version 修改孩子數
 
 
 # sum(is.na(dt2$hibp))

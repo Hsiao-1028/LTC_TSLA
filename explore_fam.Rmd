@@ -22,8 +22,8 @@ library('Hmisc')
 
 ```{r}
 
-subject<- read.csv("/Users/Ano/Desktop/HRS_Chao/LTC_TSLA/main_subject_0807.csv")
-fam<- read.csv("/Users/Ano/Desktop/HRS_Chao/LTC_TSLA/family_member_0808.csv")
+subject<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_0807.csv")
+fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_0819_all_spouse.csv")
 
 subject<- as.data.table(subject)
 fam<- as.data.table(fam)
@@ -35,21 +35,27 @@ subject<- subject[subject$survey_year != "1993"]
 
 
 ```{r}
+# check the status of lossing part 
+ideal<- as.data.table(table(sort(subject[adl_who_help!=88]$adl_who_help)))
+fam_full_spouse<- fam[, main_giver := ifelse( relationship == adl_who_help, 1, 0)][ main_giver ==1] #目前只有match 到 824筆
+fam_fs<- as.data.table(table(sort(fam_full_spouse$adl_who_help)))
 
-s<- as.data.table(table(sort(subject[adl_who_help!=88]$adl_who_help)))
-t<- fam[, main_giver := ifelse( relationship == adl_who_help, 1, 0)][ main_giver ==1] #目前只有match 到 824筆
-t<- as.data.table(table(sort(t$adl_who_help)))
-
-setnames(t, "N", "main_giver_match")
-
-
-sum(s$N) # 1642筆
-s<- s[V1 %nin% c(0, 99)]
-ss<- t[s, on="V1"]
+setnames(fam_fs, "N", "main_giver_match")
 
 
+sum(ideal$N) # 1642筆
 
-setnames(ss, "N", "total_number")
+check<- fam_fs[ideal, on="V1"]
+setnames(check, "N", "total_number")
+```
+
+Try to get them back ! 
+```{r}
+
+
+
+
+
 ```
 
 
@@ -102,7 +108,6 @@ check3<- check2[adl_who_help !=88]
 table(sort(check3$have_main_giver))
 sum(is.na(check3$have_main_giver))
 table(sort(needed_fam$have_main_giver))
-
 
 
 

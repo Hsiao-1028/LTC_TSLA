@@ -23,7 +23,7 @@ library('foreign')
 
 ```{r}
 # import data 
-load("/Users/Ano/Desktop/HRS_Chao/data_merge.RData")
+load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
 
 ```
 
@@ -113,6 +113,7 @@ dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="4", 7,dt_96_o$"0_work" ) ]
 dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="2", 4, dt_96_o$"0_work" ) ]
 dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="3", 5,dt_96_o$"0_work" ) ]
 dt_96_o[, "0_marstat":= ifelse(dt_96_o$f02a3 ==1, 1, 8) ]
+dt_96_o[, "0_children":= dt_96_o$f04b1]
 dt_96_o[, "0_livstat":= ifelse( as.numeric (dt_96_o$f02a3) == 1, 0, 88 ) ]
 dt_96_o[, "0_livwhere":= ifelse( as.numeric (dt_96_o$f02a3) == 1, 0, 88 ) ]
 dt_96_o[, "0_meet":= ifelse( as.numeric (dt_96_o$f02a3) == 1, 0, 88 ) ]
@@ -142,6 +143,8 @@ for(i in 1:9){setnames(dt_96_o, paste0( "f17b70", i), paste0(i ,"_age"))}
 for(i in 1:9){setnames(dt_96_o, paste0( "f17b80", i), paste0(i ,"_edu"))}
 for(i in 1:9){setnames(dt_96_o, paste0( "f17b90", i), paste0(i ,"_work"))}
 for(i in 1:9){setnames(dt_96_o, paste0( "f17b100", i), paste0(i ,"_marstat"))}
+for(i in 1:9){setnames(dt_96_o, paste0( "fb10a0", i), paste0(i ,"_children"))}
+
 for(i in 1:9){setnames(dt_96_o, paste0( "f17b110", i), paste0(i ,"_livstat"))}
 for(i in 1:9){ setnames(dt_96_o, paste0( "f17b120", i), paste0(i ,"_livwhere"))}
 for(i in 1:9){setnames(dt_96_o, paste0( "f17b130", i), paste0(i ,"_meet"))}
@@ -149,8 +152,9 @@ for(i in 1:9){setnames(dt_96_o, paste0( "f17b140", i), paste0(i ,"_tele"))}
 
 # 10 is change
 status<- c("_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
-setnames(dt_96_o, "f17b5110", "10_relation")
+setnames(dt_96_o, c("f17b5110", "fb10a10"), c("10_relation", "10_children"))
 setnames(dt_96_o, paste0( "f17b", 6:14 ,"10"), paste0("10" , status))
+
 
 #11~19 f22...
 for(i in 11:20){setnames(dt_96_o, paste0( "f18b51", i), paste0(i ,"_relation"))}
@@ -159,6 +163,7 @@ for(i in 11:20){setnames(dt_96_o, paste0( "f18b7", i), paste0(i ,"_age"))}
 for(i in 11:20){setnames(dt_96_o, paste0( "f18b8", i), paste0(i ,"_edu"))}
 for(i in 11:20){setnames(dt_96_o, paste0( "f18b9", i), paste0(i ,"_work"))}
 for(i in 11:20){setnames(dt_96_o, paste0( "f18b10", i), paste0(i ,"_marstat"))}
+for(i in 11:20){setnames(dt_96_o, paste0( "fb10a", i), paste0(i ,"_children"))}
 for(i in 11:20){setnames(dt_96_o, paste0( "f18b11", i), paste0(i ,"_livstat"))}
 for(i in 11:20){ setnames(dt_96_o, paste0("f18b12", i), paste0(i ,"_livwhere"))}
 for(i in 11:20){setnames(dt_96_o, paste0( "f18b13", i), paste0(i ,"_meet"))}
@@ -173,6 +178,8 @@ for(i in 1:9){setnames(dt_96_o, paste0( "f19b220", i), paste0(i+20 ,"_age"))}
 for(i in 1:9){setnames(dt_96_o, paste0( "f19b230", i), paste0(i+20 ,"_edu"))}
 for(i in 1:9){setnames(dt_96_o, paste0( "f19b240", i), paste0(i+20 ,"_work"))}
 for(i in 1:9){setnames(dt_96_o, paste0( "f19b250", i), paste0(i+20 ,"_marstat"))}
+dt_96_o[, "fb25a01":= 99] # this column is missing for 不同著子女21 
+for(i in 1:9){setnames(dt_96_o, paste0( "fb25a0", i), paste0(i+20 ,"_children"))}
 dt_96_o[, paste0(21:29,"_livstat") := 0, ]
 # dt_96_o[, .SD :=0, .SDcols = paste0(21:29,"_livstat" )]
 # for(i in 1:9){setnames(dt_96_o, paste0( "f23b250", i), paste0(i+20 ,"_livstat"))}
@@ -181,18 +188,23 @@ for(i in 1:9){setnames(dt_96_o, paste0( "f19b270", i), paste0(i+20 ,"_meet"))}
 for(i in 1:9){setnames(dt_96_o, paste0( "f19b280", i), paste0(i+20 ,"_tele"))}
 
 # 30 
-dt_96_o[, paste0(30:31,"_livstat") := 0, ]
+dt_96_o[, paste0(30:32,"_livstat") := 0, ]
 status<- c("_gender","_age","_edu","_work","_marstat","_livwhere","_meet","_tele")
-setnames(dt_96_o, "fb20110", "30_relation")
+setnames(dt_96_o, c("fb20110", "fb25a10"),c("30_relation", "30_children"))
 setnames(dt_96_o, paste0( "f19b", 21:28 ,"10"), paste0("30" , status))
-#31
+
+# 31
 status<- c("_gender","_age","_edu","_work","_marstat","_livwhere","_meet","_tele")
-setnames(dt_96_o, "fb20111", "31_relation")
+setnames(dt_96_o, c("fb20111", "fb25a11"), c("31_relation", "31_children"))
 setnames(dt_96_o, paste0( "f20b", 21:28 ,"11"), paste0("31" , status))
 
+# 32 
+status<- c("_gender","_age","_edu","_work","_marstat","_livwhere","_meet","_tele")
+setnames(dt_96_o, c("fb20112", "fb25a12"), c("32_relation", "32_children"))
+setnames(dt_96_o, paste0( "f20b", 21:28 ,"12"), paste0("32" , status))
 
 
-cols<- c(unlist( lapply(paste0("^", 0:31,"_"), function(x){grep(x, names(dt_96_o), value = T)})))
+cols<- c(unlist( lapply(paste0("^", 0:32,"_"), function(x){grep(x, names(dt_96_o), value = T)})))
 class(cols)
 fam_96_o<- dt_96_o[, cols, with=FALSE]
 
@@ -200,7 +212,7 @@ fam_96_o<- dt_96_o[, cols, with=FALSE]
 dt_96_o <- cbind(demo_dt_96_o,adls_dt_96_o,dis_dt_96_o, fam_96_o)
 dt_96_o <- dt_96_o[,"birthyear" := survey_year - rage][, qser_no := paste0(qtype, ser_no)]
 
-d1 <- read.spss("/Users/Ano/Desktop/HRS_Chao/BKGRD/BKGRD89_99/Data/bkgrdall_v2.sav", to.data.frame=TRUE)
+d1 <- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/BKGRD/BKGRD89_99/Data/bkgrdall_v2.sav", to.data.frame=TRUE)
 # find age
 d1<-as.data.table(d1)
 d1[, birthyear:= 1996 - 1911 - d1$AGE96][, qser_no := paste0(QTYPE, SER_NO)]
@@ -220,7 +232,6 @@ dt_96_o[, walk_indoor:= ifelse(walk_indoor ==8, 0, walk_indoor)]
 dt_96_o[, WC:= ifelse(WC ==8, 0, WC)]
 
 # 父親、母親、公公、岳父、婆婆、岳母 有特別問，但我覺得好像都在這29個關係中有被登記過了。
-
 
 
 ```
@@ -290,6 +301,7 @@ dt_96_y[, "0_work":=  as.numeric(as.character(dt_96_y$f02a16))]
 dt_96_y[, "0_work":=  ifelse(dt_96_y$"0_work" ==2 & dt_96_y$f02a16a == 1, 4, dt_96_y$"0_work" ) ]
 dt_96_y[, "0_work":=  ifelse(dt_96_y$"0_work" ==2, 5,dt_96_y$"0_work" ) ]
 dt_96_y[, "0_marstat":= ifelse( as.numeric (dt_96_y$f02a10) == 1, 1, NA) ] # 只取同住伴侶 ，同住非伴侶的關係只有4個，就先略了
+dt_96_y[, "0_children":= dt_96_y$f04b1 ] 
 dt_96_y[, "0_livstat":= ifelse( as.numeric (dt_96_y$f02a10a) == 1, 0, NA ) ]
 dt_96_y[, "0_livstat":= ifelse( as.numeric(dt_96_y$f02a10a)== 0, 1, dt_96_y$"0_livstat" ) ]
 dt_96_y[, "0_livstat":= ifelse(dt_96_y$"0_livstat" %nin% c(0,1), dt_96_y$f02a10a, dt_96_y$"0_livstat" ) ]
@@ -307,6 +319,8 @@ for(i in 1:9){setnames(dt_96_y, paste0( "f21b70", i), paste0(i ,"_age"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f21b80", i), paste0(i ,"_edu"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f21b90", i), paste0(i ,"_work"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f21b100", i), paste0(i ,"_marstat"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "fb10a0", i), paste0(i ,"_children"))}
+
 for(i in 1:9){setnames(dt_96_y, paste0( "f21b110", i), paste0(i ,"_livstat"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f21b120", i), paste0(i ,"_livwhere"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f21b130", i), paste0(i ,"_meet"))}
@@ -314,7 +328,7 @@ for(i in 1:9){setnames(dt_96_y, paste0( "f21b140", i), paste0(i ,"_tele"))}
 
 # 10 is change
 status<- c("_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
-setnames(dt_96_y, "f21b5110", "10_relation")
+setnames(dt_96_y, c("f21b5110","fb10a10"), c("10_relation", "10_children"))
 setnames(dt_96_y, paste0( "f21b", 6:14 ,"10"), paste0("10" , status))
 
 #11~19 f22...
@@ -324,6 +338,8 @@ for(i in 11:20){setnames(dt_96_y, paste0( "f22b7", i), paste0(i ,"_age"))}
 for(i in 11:20){setnames(dt_96_y, paste0( "f22b8", i), paste0(i ,"_edu"))}
 for(i in 11:20){setnames(dt_96_y, paste0( "f22b9", i), paste0(i ,"_work"))}
 for(i in 11:20){setnames(dt_96_y, paste0( "f22b10", i), paste0(i ,"_marstat"))}
+for(i in 11:20){setnames(dt_96_y, paste0( "fb10a", i), paste0(i ,"_children"))}
+
 for(i in 11:20){setnames(dt_96_y, paste0( "f22b11", i), paste0(i ,"_livstat"))}
 for(i in 11:20){ setnames(dt_96_y, paste0("f22b12", i), paste0(i ,"_livwhere"))}
 for(i in 11:20){setnames(dt_96_y, paste0( "f22b13", i), paste0(i ,"_meet"))}
@@ -338,6 +354,7 @@ for(i in 1:9){setnames(dt_96_y, paste0( "f23b210", i), paste0(i+20 ,"_age"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f23b220", i), paste0(i+20 ,"_edu"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f23b230", i), paste0(i+20 ,"_work"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f23b240", i), paste0(i+20 ,"_marstat"))}
+for(i in 1:9){setnames(dt_96_y, paste0( "fb24a0", i), paste0(i+20 ,"_children"))}
 dt_96_y[, paste0(21:30,"_livstat") := 0, ]
 # dt_96_y[, .SD :=0, .SDcols = paste0(21:29,"_livstat" )]
 # for(i in 1:9){setnames(dt_96_y, paste0( "f23b250", i), paste0(i+20 ,"_livstat"))}
@@ -346,9 +363,8 @@ for(i in 1:9){setnames(dt_96_y, paste0( "f23b260", i), paste0(i+20 ,"_meet"))}
 for(i in 1:9){setnames(dt_96_y, paste0( "f23b270", i), paste0(i+20 ,"_tele"))}
 # omit 2 ppl for 30 and 31
 
-setnames(dt_96_y, c("fb19110","f23b2010","f23b2110","f23b2210","f23b2310","f23b2410","f23b2510","f23b2610","f23b2710"),c("30_relation","30_gender","30_age","30_edu","30_work","30_marstat","30_livwhere","30_meet","30_tele"))
+setnames(dt_96_y, c("fb19110","f23b2010","f23b2110","f23b2210","f23b2310","f23b2410","fb24a10","f23b2510","f23b2610","f23b2710"),c("30_relation","30_gender","30_age","30_edu","30_work","30_marstat","30_children","30_livwhere","30_meet","30_tele"))
 # 用lapply重複操作grep，用regular expression 抓出特定的句子
-
 
 
 # cols<- c("1_relation", "1_meet")
@@ -394,15 +410,15 @@ dt_96_y[, WC:= ifelse(WC ==8, 0, WC)]
 library(reshape)
 
 #first deal help ?? 重複??
-liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
+liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_children","_livstat","_livwhere","_meet","_tele")
 
-cols<- unlist(lapply(0:31, function(x){paste0(x,liv)}))
+cols<- unlist(lapply(0:32, function(x){paste0(x,liv)}))
 cols<- append(c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help'), cols)
 tt<- dt_96_o[, .SD, .SDcols=cols ] 
 
-x<- list( c(paste0(0:31, "_relation")), c(paste0(0:31, "_gender")), c(paste0(0:31, "_age")), c(paste0(0:31,"_edu")), c(paste0(0:31, "_work")), c(paste0(0:31, "_marstat")), c(paste0(0:31, "_livstat")), c(paste0(0:31, "_livwhere")), c(paste0(0:31, "_meet")), c(paste0(0:31, "_tele")))
+x<- list( c(paste0(0:32, "_relation")), c(paste0(0:32, "_gender")), c(paste0(0:32, "_age")), c(paste0(0:32,"_edu")), c(paste0(0:32, "_work")), c(paste0(0:32, "_marstat")), c(paste0(0:32, "_children")), c(paste0(0:32, "_livstat")), c(paste0(0:32, "_livwhere")), c(paste0(0:32, "_meet")), c(paste0(0:32, "_tele")))
 
-dt_96o_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","livstat","livwhere","meet","tele"))
+dt_96o_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","children","livstat","livwhere","meet","tele"))
 
 dt_96o_reshape <- as.data.table(dt_96o_reshape)
 dt_96o_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
@@ -414,9 +430,9 @@ cols<- unlist(lapply(0:30, function(x){paste0(x,liv)}))
 cols<- append(c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help'), cols)
 tt<- dt_96_y[, .SD, .SDcols=cols ] 
 
-x<- list( c(paste0(0:30, "_relation")), c(paste0(0:30, "_gender")), c(paste0(0:30, "_age")), c(paste0(0:30,"_edu")), c(paste0(0:30, "_work")), c(paste0(0:30, "_marstat")), c(paste0(0:30, "_livstat")), c(paste0(0:30, "_livwhere")), c(paste0(0:30, "_meet")), c(paste0(0:30, "_tele")))
+x<- list( c(paste0(0:30, "_relation")), c(paste0(0:30, "_gender")), c(paste0(0:30, "_age")), c(paste0(0:30,"_edu")), c(paste0(0:30, "_work")), c(paste0(0:30, "_marstat")), c(paste0(0:30, "_children")), c(paste0(0:30, "_livstat")), c(paste0(0:30, "_livwhere")), c(paste0(0:30, "_meet")), c(paste0(0:30, "_tele")))
 
-dt_96y_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","livstat","livwhere","meet","tele"))
+dt_96y_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype", 'adl_who_help', 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","children","livstat","livwhere","meet","tele"))
 
 dt_96y_reshape <- as.data.table(dt_96y_reshape)
 dt_96y_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
@@ -427,7 +443,7 @@ dt_96y_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
 ```{r}
 
 fam_96 <- rbind(dt_96o_reshape, dt_96y_reshape)
-
+fam_96[, children := as.numeric(as.character(children))]
 
 fam_96 <-fam_96[gender!= 8] 
 fam_96<- as.data.table(fam_96)
@@ -443,6 +459,7 @@ fam_96[,livstat:= ifelse(fam_96$livstat== 4, 3, livstat)]
 fam_96[,livstat:= ifelse(fam_96$livstat== 996, 4, livstat)]
 table(sort(fam_96$livstat))
 
+fam_96[ ,children:= ifelse( marstat %in% c(6,8), 88, children)]
 
 # lapply(fam_96[, .SD, .SDcols= grep("^who_help", names(fam_96))], function(x){replace(x, x==88, NA)})
 # fam_96[, who_helpbath:= ifelse(who_helpbath==88, NA, who_helpbath)]

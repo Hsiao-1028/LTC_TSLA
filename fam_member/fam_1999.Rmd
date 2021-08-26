@@ -7,7 +7,7 @@ output: html_document
 
 ```{r}
 library(data.table)
-data = load("/Users/Ano/Desktop/HRS_Chao/data_merge.RData")
+load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
 
 ```
 
@@ -93,6 +93,7 @@ dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(4,6), 333, dt_99$"0_work" ) ] #
 dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(5), 4,dt_99$"0_work" ) ] # 家務事
 dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(333), 5,dt_99$"0_work" ) ] # 家務事
 dt_99[, "0_marstat":= 1]
+dt_99[, "0_children":= as.numeric(as.character(b1_5))]
 dt_99[, "0_livstat":= 0]
 dt_99[, "0_livwhere":= 0]
 dt_99[, "0_meet":= 0]
@@ -111,6 +112,7 @@ for(i in 1:6){setnames(dt_99, paste0( "b7_0", i), paste0(i ,"_age"))}
 for(i in 1:6){setnames(dt_99, paste0( "b8_0", i), paste0(i ,"_edu"))}
 for(i in 1:6){setnames(dt_99, paste0( "b9_0", i), paste0(i ,"_work"))}
 for(i in 1:6){setnames(dt_99, paste0( "b10_0", i), paste0(i ,"_marstat"))}
+for(i in 1:6){setnames(dt_99, paste0( "b10a_0", i), paste0(i ,"_children"))}
 dt_99[, paste0(1:6, "_livstat"):= 0, ] #0 = 住在一起
 dt_99[, paste0(1:6, "_livwhere"):= 0, ] #0 = 住在一起
 dt_99[, paste0(1:6, "_meet"):= 0, ] #0 = 住在一起
@@ -124,6 +126,10 @@ for(i in 11:21){setnames(dt_99, paste0( "b7_", i), paste0(i-4 ,"_age"))}
 for(i in 11:21){setnames(dt_99, paste0( "b8_", i), paste0(i-4 ,"_edu"))}
 for(i in 11:21){setnames(dt_99, paste0( "b9_", i), paste0(i-4 ,"_work"))}
 for(i in 11:21){setnames(dt_99, paste0( "b10_", i), paste0(i-4 ,"_marstat"))}
+for(i in 11:19){setnames(dt_99, paste0( "b10a_", i), paste0(i-4 ,"_children"))} # 20 and 21 is missing
+dt_99[, "16_children":=99]
+dt_99[, "17_children":=99]
+
 for(i in 11:21){setnames(dt_99, paste0( "b11_", i), paste0(i-4 ,"_livstat"))}
 for(i in 11:21){setnames(dt_99, paste0( "b12_", i), paste0(i-4 ,"_livwhere"))}
 for(i in 11:21){setnames(dt_99, paste0( "b13_", i), paste0(i-4 ,"_meet"))}
@@ -144,6 +150,8 @@ for(i in 10:16){setnames(dt_99, paste0( "b18_", i), paste0(i+17 ,"_age"))}
 for(i in 10:16){setnames(dt_99, paste0( "b19_", i), paste0(i+17 ,"_edu"))}
 for(i in 10:16){setnames(dt_99, paste0( "b20_", i), paste0(i+17 ,"_work"))}
 for(i in 10:16){setnames(dt_99, paste0( "b21_", i), paste0(i+17 ,"_marstat"))}
+
+dt_99[, paste0(18:33, "_children"):= 99, ] # 沒有問子女數
 dt_99[, paste0(18:33, "_livstat"):= 0, ] #0 = 住在一起
 dt_99[, paste0(18:33, "_livwhere"):= 0, ] #0 = 住在一起
 dt_99[, paste0(18:33, "_meet"):= 0, ] #0 = 住在一起
@@ -179,15 +187,15 @@ dt_99[, c('i.rsex', 'i.reduc', 'i.ethnicty'):=NULL]
 ```{r}
 library(reshape)
 
-liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")
+liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_children","_livstat","_livwhere","_meet","_tele")
 
 cols<- unlist(lapply(0:33, function(x){paste0(x,liv)}))
 cols<- append(c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help'), cols)
 tt<- dt_99[, .SD, .SDcols=cols ] 
 
-x<- list( c(paste0(0:33, "_relation")), c(paste0(0:33, "_gender")), c(paste0(0:33, "_age")), c(paste0(0:33,"_edu")), c(paste0(0:33, "_work")), c(paste0(0:33, "_marstat")), c(paste0(0:33, "_livstat")), c(paste0(0:33, "_livwhere")), c(paste0(0:33, "_meet")), c(paste0(0:33, "_tele")))
+x<- list( c(paste0(0:33, "_relation")), c(paste0(0:33, "_gender")), c(paste0(0:33, "_age")), c(paste0(0:33,"_edu")), c(paste0(0:33, "_work")), c(paste0(0:33, "_marstat")), c(paste0(0:33, "_children")), c(paste0(0:33, "_livstat")), c(paste0(0:33, "_livwhere")), c(paste0(0:33, "_meet")), c(paste0(0:33, "_tele")))
 
-dt_99_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","livstat","livwhere","meet","tele"))
+dt_99_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","children","livstat","livwhere","meet","tele"))
 
 dt_99_reshape <- as.data.table(dt_99_reshape)
 dt_99_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
@@ -212,6 +220,8 @@ test[, age:= ifelse(age ==1002 , NA, test$age)]
 test[,edu:= as.numeric(as.character(edu))]
 test[,work:= as.numeric(as.character(work))]
 test[,marstat:= as.numeric(as.character(marstat))]
+test[,children:= as.numeric(as.character(children))]
+test[ ,children:= ifelse( marstat %in% c(6,8), 88, children)]
 test[,livstat:= as.numeric(as.character(livstat))]
 test[,livwhere:= as.numeric(as.character(livwhere))]
 test[, meet:= as.numeric(as.character(meet))]
@@ -222,19 +232,23 @@ test[,tele:= as.numeric(as.character(tele))]
 
 test[,meet:= ifelse(test$meet ==8, 99 ,test$meet)]
 
+table(sort(fam_99$children))
+
+
 fam_99<-test
 ```
 
 
-```{r}
-# find other sources for spouses age 
 
-library('foreign')
+<!-- ```{r} -->
+<!-- # find other sources for spouses age  -->
+
+<!-- library('foreign') -->
 
 
-s<- read.spss("/Users/Ano/Desktop/HRS_Chao/ELDATA/ELDATA89/SPSS/deck1.sav", to.data.frame = TRUE)
-# 目前無法
-```
+<!-- s<- read.spss("/Users/Ano/Desktop/HRS_Chao/ELDATA/ELDATA89/SPSS/deck1.sav", to.data.frame = TRUE) -->
+<!-- # 目前無法 -->
+<!-- ``` -->
 
 
 
