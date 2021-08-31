@@ -196,6 +196,7 @@ check<- fam_fs_re[check, on = "relationship"]
 
 setnames(check, c("i.main_giver_match", "main_giver_match"), c("main_giver_match", "main_giver_match_post"))
 
+fam_re[, relationship := as.numeric( as.character(relationship))]
 ```
 
 
