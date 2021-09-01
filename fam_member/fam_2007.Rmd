@@ -21,7 +21,7 @@ library("tibble")
 
 ```{r}
 library(data.table)
-load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
+# load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
 
 ```
 
@@ -110,20 +110,41 @@ dis_dt_07<- setNames(dis_dt_07, dis_07)
 
 # 來抓伴侶！
 dt_03<- as.data.table( rbind(dt_03o, dt_03y, fill=TRUE))
-dt_03[,"ID" := paste0(dt_03$qtype, dt_03$ser_no)]
-dt_07[,"ID":= paste0(dt_07$qtype, dt_07$ser_no)]
-survive <- intersect(dt_03$ID, dt_07$ID)
 
-ss<- dt_03[ID %in% survive, c("ID","0_age", "0_edu")]
-setnames(ss, c("ID", "0_age", "0_edu"), c("ID", "03age", "03edu"))
-dt_07<- ss[dt_07, on="ID"]
+dt_96[,"qser_no":= paste0(qtype, ser_no)]
+dt_99[,"qser_no":= paste0(dt_99$qtype, dt_99$ser_no)]
+dt_03[,"qser_no" := paste0(dt_03$qtype, dt_03$ser_no)]
+dt_07[,"qser_no":= paste0(dt_07$qtype, dt_07$ser_no)]
+survive <- intersect(dt_03$qser_no, dt_07$qser_no)
+
+missing<- dt_07$qser_no[! dt_07$qser_no %in% survive]  
+missing_96<- intersect(missing, dt_96$qser_no)
+missing_89 <- missing[! missing %in% missing_96]
+missing_89 <- intersect(missing_89, dt_89$qser_no)
+
+
+
+ss<- dt_03[qser_no %in% survive, c("qser_no","0_age", "0_edu")]
+s_96 <- dt_96[qser_no %in% missing_96, c("qser_no","0_age", "0_edu")]
+s_89 <- dt_89[qser_no %in% missing_89, c("qser_no", "spyrbir", "speduc")]
+
+setnames(s_89, c("qser_no", "spyrbir", "speduc"), c("qser_no", "old_age", "old_edu"))
+s_89[, old_age := as.numeric(as.character(old_age)) +14 ] # age補到99年
+setnames(s_96, c("qser_no", "0_age", "0_edu"), c("qser_no", "old_age", "old_edu"))
+s_96[, old_age := as.numeric(as.character(old_age)) +7 ] # age補到99年
+setnames(ss, c("qser_no", "0_age", "0_edu"), c("qser_no", "old_age", "old_edu"))
+
+ss<- as.data.table(rbind(ss, rbind(s_89, s_96)))
+setnames(ss, c("qser_no", "old_age", "old_edu"), c("qser_no", "03age", "03edu"))
+
+dt_07<- ss[dt_07, on="qser_no"]
+
 
 # 0_ 為伴侶資料
-
 dt_07[, "0_relation":= 2,]
 dt_07[, "0_gender":=  ifelse(dt_07$cvr1 == 1, 2 , 1 )]
 dt_07[, "0_gender":=  ifelse(dt_07$a1_2 %in% c(3,4,5,6,8,9), 8 , dt_07$"0_gender" )]
-dt_07[, "0_age":= dt_07$"03age"+4]["0_age" > 150, "0_age":= 999]
+dt_07[, "0_age":= dt_07$"03age"+4][, "0_age":= ifelse( dt_07$`0_age` >150, NA, dt_07$`0_age`)]
 dt_07[, "0_edu":= dt_07$"03edu"]
 dt_07[, "0_work":= as.character(dt_07$e20)]
 dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(1,2), 1,dt_07$"0_work" ) ]
@@ -283,5 +304,17 @@ fam_07<-test
 
 ```
 
+
+
+```{r}
+# check about the spouses' age
+# 還有個問題就是 89年可能把民國跟歲數encode 成同一個欄位... 頭痛
+sum(is.na(dt_96$`0_age`)) # ba in 1996
+sum(is.na(dt_99$`0_age`)) # ba in 1999
+sum(is.na(dt_03$`0_age`)) # ba in 2003
+sum(is.na(dt_07$`0_age`)) # ba in 2007
+
+
+```
 
 

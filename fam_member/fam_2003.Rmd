@@ -19,10 +19,10 @@ library("tibble")
 ```
 
 ```{r}
-# import data 
-load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
-
+# import data
+# load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
 ```
+
 
 ```{r}
 # first we use data from 2003 to learn the package "melt" and "reshape"
@@ -156,9 +156,11 @@ dt_03y[, "0_relation":= 2]
 dt_03y[, "0_gender":= ifelse(dt_03y$sex ==1, 2, 1)]
 dt_03y[, "0_gender" := ifelse(dt_03y$a13 %in% c(2,3,4,5), 8, dt_03y$"0_gender")]
 dt_03y[, "0_age":= 92 - as.numeric(as.character(dt_03y$a15roc))]
-dt_03y[, "0_age":= ifelse(dt_03y$"0_age" %in% c(4, -6, -7), 999,dt_03y$"0_age" )]
-dt_03y[, "0_edu":=  as.numeric(as.character(dt_03y$a17))]
+dt_03y[, "0_age":= ifelse(dt_03y$`0_age` == 4, as.numeric(as.character(dt_03y$a15y)), dt_03y$`0_age`)]
+dt_03y[, "0_age":= ifelse(dt_03y$`0_age` == 88, 92- as.numeric(as.character(dt_03y$a15roc)), dt_03y$`0_age`)]
+dt_03y[, "0_age":= ifelse(dt_03y$"0_age" %in% c(98, -6, -7, 4), NA,dt_03y$"0_age" )]
 
+dt_03y[, "0_edu":=  as.numeric(as.character(dt_03y$a17))]
 dt_03y[, "0_work":= as.numeric(as.character(dt_03y$e23))]
 dt_03y[, "0_work":=  ifelse(dt_03y$"0_work" %in% c(1,2), 1,dt_03y$"0_work" ) ]
 dt_03y[, "0_work":=  ifelse(dt_03y$"0_work" %in% c(3), 7,dt_03y$"0_work" ) ]
@@ -249,16 +251,31 @@ dt_03y[, birthyear := 2003 -1911- age][, rage:=age][, rage:=NULL][, c('i.age', '
 
 dt_96<- as.data.table( rbind(dt_96_o, dt_96_y, fill = TRUE))
 
-dt_99[,"ID":= paste0(dt_99$qtype, dt_99$ser_no)]
-dt_03o[,"ID":= paste0(dt_03o$qtype, dt_03o$ser_no)]
+dt_96[,"qser_no":= paste0(qtype, ser_no)]
+dt_99[,"qser_no":= paste0(dt_99$qtype, dt_99$ser_no)]
+dt_03o[,"qser_no":= paste0(dt_03o$qtype, dt_03o$ser_no)]
+
+survive<- intersect(dt_03o$qser_no, dt_99$qser_no)
+missing<- dt_03o$qser_no[! dt_03o$qser_no %in% survive]  # 
+missing_96<- intersect(missing, dt_96$qser_no)
+missing_89 <- missing[! missing %in% missing_96]
+missing_89 <- intersect(missing_89, dt_89$qser_no)
 
 # survive_A<- intersect(dt_96[qtype =="A" ]$ser_no, dt_99[qtype =="A"]$ser_no)
 # survive_B<- intersect(dt_96[qtype =="B"]$ser_no, dt_99[qtype =="B"]$ser_no)
-survive<- intersect(dt_03o$ID, dt_99$ID)
 
-ss<- dt_99[ID %in% survive, c("ID","0_age", "0_edu")]
-setnames(ss, c("ID", "0_age", "0_edu"), c("ID", "99age", "99edu"))
-dt_03o<- ss[dt_03o, on="ID"]
+ss<- dt_99[qser_no %in% survive, c("qser_no","0_age", "0_edu")]
+s_96 <- dt_96[qser_no %in% missing_96, c("qser_no","0_age", "0_edu")]
+s_89 <- dt_89[qser_no %in% missing_89, c("qser_no", "spyrbir", "speduc")]
+setnames(s_89, c("qser_no", "spyrbir", "speduc"), c("qser_no", "old_age", "old_edu"))
+s_89[, old_age := as.numeric(as.character(old_age)) +10 ] # age補到99年
+setnames(s_96, c("qser_no", "0_age", "0_edu"), c("qser_no", "old_age", "old_edu"))
+s_96[, old_age := as.numeric(as.character(old_age)) +3 ] # age補到99年
+setnames(ss, c("qser_no", "0_age", "0_edu"), c("qser_no", "old_age", "old_edu"))
+
+ss<- as.data.table(rbind(ss, rbind(s_89, s_96)))
+setnames(ss, c("qser_no", "old_age", "old_edu"), c("qser_no", "99age", "99edu"))
+dt_03o<- ss[dt_03o, on="qser_no"]
 
 
 
@@ -427,7 +444,7 @@ fam_03<- test
 # End
 
 table(sort(fam_03$children))
-
+dt_03<- as.data.table(rbind(dt_03o, dt_03y, fill=TRUE))
 ```
 
 

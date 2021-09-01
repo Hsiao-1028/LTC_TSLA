@@ -1,7 +1,7 @@
 ---
 title: "re_subject_extraction"
 author: "Hsiao"
-date: "8/2/2021"
+date: "08/31/2021"
 output: html_document
 ---
 
@@ -42,6 +42,7 @@ dt_89 <- data.table(df_c_89)
 df_89 <- dt_89[, "survey_year":= 1989] 
 demo_89 <- dt_89[ , c("qtype", "ser_no", "survey_year","rsex", "rage","reduc","ethnicty","marstat")]
 demo_89[, qser_no := paste0(qtype, ser_no)][, birthyear := survey_year -1911 - rage]
+
 
 ```
 

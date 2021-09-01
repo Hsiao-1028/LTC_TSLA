@@ -85,6 +85,19 @@ adls_96 <- c("general","bath","clothes","dine","wakeup","walk_indoor","WC")
 
 ```
 
+```{r}
+# specify on 1989's age 
+
+check <- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/ELDATA/ELDATA89/SPSS/deck1.sav", to.data.frame = TRUE)
+
+print("Distribution of the Age of thier Spouses")
+table(sort(check$SPYRBIR))
+
+print("")
+print("Distribution of the Age of Respondents")
+# table(sort(dt_89$rage))
+
+```
 
 
 ```{r}
@@ -93,6 +106,7 @@ dt_89 <- copy(df_c_89)
 dt_89<- as.data.table(dt_89)
 edu<- dt_89[,c("ser_no","speduc") , ]
 edu<- as.data.table(edu)
+
 
 
 # 存活下來的人： 
@@ -105,7 +119,7 @@ dt_96_o<- edu[dt_96_o, on= "ser_no"]
 dt_96_o[, "0_relation":= 2,]
 dt_96_o[, "0_gender":=  ifelse(dt_96_o$f0103 == 1, 2 , 1 )][, '0_gender':= ifelse(dt_96_o$f02a3 ==1, dt_96_o$'0_gender', 8) ]
 dt_96_o[, "0_age":= 87- as.numeric(dt_89[ser_no %in% unique(survive) ]$spyrbir)] # 要從1989年的回推，但當年資料var 超大，不確定是怎樣
-# dt_96_o[, "0_age":= ifelse( dt_96_y$"0_age" %in% c(-13, -14), 999, dt_96_y$"0_age" )]  # 去掉88, 98, 99 為不適用與missing
+# dt_96_o[, "0_age":= ifelse( dt_96_y$"0_age" %in% c(-13, -14), 999, dt_96_y$"0_age" )]  # 去掉88, 98, 99 為不適用與missing # 123個NAs
 
 dt_96_o[, "0_edu":=  dt_96_o$speduc] # Invarance 
 dt_96_o[, "0_work":=  as.character(dt_96_o$f02a4a)] # 8 == 喪偶，新結婚，
@@ -234,6 +248,8 @@ dt_96_o[, WC:= ifelse(WC ==8, 0, WC)]
 # 父親、母親、公公、岳父、婆婆、岳母 有特別問，但我覺得好像都在這29個關係中有被登記過了。
 
 
+# View(dt_96_o[qser_no == "B31"])
+
 ```
 
 
@@ -294,8 +310,9 @@ dis_dt_96_y<- setNames(dis_dt_96_y, dis_96)
 dt_96_y[, "0_relation":= 2,]
 dt_96_y[, "0_gender":=  ifelse(dt_96_y$f0103 == 1, 2 , 1 )]
 dt_96_y[, "0_age":= 85 - as.numeric(as.character(dt_96_y$f02a1201))] # missing 也是很多
-dt_96_y[, "0_age":= ifelse( dt_96_y$"0_age"== -3, NA, dt_96_y$"0_age" )]  # 去掉88, 98, 99 為不適用與missing
-dt_96_y[, "0_age":= ifelse( dt_96_y$"0_age" %in% c(-13, -14), 999, dt_96_y$"0_age" )]  # 去掉88, 98, 99 為不適用與missing
+dt_96_y[, "0_age":= ifelse(dt_96_y$"0_age" == -3, as.numeric(as.character(dt_96_y$f02a1202)), dt_96_y$"0_age")] # missing 也是很多
+dt_96_y[, "0_age":= ifelse( dt_96_y$"0_age" %in% c( -14, -13, 98, 88), NA, dt_96_y$"0_age" )]  # all these are NAs
+
 dt_96_y[, "0_edu":=  dt_96_y$f02a14]
 dt_96_y[, "0_work":=  as.numeric(as.character(dt_96_y$f02a16))]
 dt_96_y[, "0_work":=  ifelse(dt_96_y$"0_work" ==2 & dt_96_y$f02a16a == 1, 4, dt_96_y$"0_work" ) ]

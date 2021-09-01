@@ -5,11 +5,11 @@ date: "6/30/2021"
 output: html_document
 ---
 
-```{r}
-library(data.table)
-load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
+<!-- ```{r} -->
+<!-- library(data.table) -->
+<!-- load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData") -->
 
-```
+<!-- ``` -->
 
 
 
@@ -67,16 +67,29 @@ adls_dt_99[, iadl_who_help := dt_99$c25c][, adl_who_help := dt_99$c26e][, iadl_w
 
 ```{r}
 #fam
+# 有153位 在1996年沒有出現，但是在1999年有出現的人
+# 我們用1989年的資料 merge回去
 dt_96<- as.data.table( rbind(dt_96_o, dt_96_y, fill = TRUE))
-dt_96[,"ID":= paste0(dt_96$qtype, dt_96$ser_no)]
-dt_99[,"ID":= paste0(dt_99$qtype, dt_99$ser_no)]
+dt_89[, qser_no := paste0(qtype, ser_no)]
+dt_96[,"qser_no":= paste0(qtype, ser_no)]
+dt_99[,"qser_no":= paste0(qtype, ser_no)]
 
-survive<- intersect(dt_96$ID, dt_99$ID)
 
-ss<- dt_96[ID %in% survive, c("ID", "rsex", "0_age", "0_edu")]
-setnames(ss, c("ID", "rsex", "0_age", "0_edu"), c("ID","rsex_96", "96age", "96edu"))
+# View(dt_89[qser_no == "B31"])
 
-dt_99<- ss[dt_99, on="ID"]
+survive<- intersect(dt_96$qser_no, dt_99$qser_no)
+
+ss<- dt_96[qser_no %in% survive, c("qser_no", "rsex", "0_age", "0_edu")]
+
+missing<- dt_99$qser_no[! dt_99$qser_no %in% ss$qser_no]  # 就是這些人 等1993年的資料來再處理
+missing<- intersect(missing, dt_89$qser_no)
+
+s <- dt_89[qser_no %in% missing, c("qser_no", "rsex", "spyrbir", "speduc")]
+setnames(s, c("qser_no", "rsex", "spyrbir", "speduc"), c("qser_no","rsex_96", "96age", "96edu"))
+setnames(ss, c("qser_no", "rsex", "0_age", "0_edu"), c("qser_no","rsex_96", "96age", "96edu"))
+ss<- rbind(ss, s)
+
+dt_99<- ss[dt_99, on="qser_no"]
 dt_99$rsex<- dt_99$rsex_96
 
 # 伴侶：
@@ -84,7 +97,7 @@ dt_99$rsex<- dt_99$rsex_96
 dt_99[, "0_relation":= 2] 
 dt_99[, "0_gender":= ifelse(dt_99$rsex ==1, 2, 1)] 
 dt_99[, "0_gender":= ifelse(dt_99$a1_2 %in% c(3,4,5,6), 8, dt_99$"0_gender")]  # 不同住的配偶會在這裡被清掉
-dt_99[, "0_age":= dt_99$"96age"+ 3]
+dt_99[, "0_age":= dt_99$"96age"+ 3] # 153為沒有登錄在1996年的人 + 154 位在1996年就 missing的人 # 抓回來後還有174人
 dt_99[, "0_edu":= dt_99$"96edu"]
 dt_99[, "0_work":=  as.character(dt_99$e20)]
 dt_99[, "0_work":=  ifelse(dt_99$"0_work" %in% c(1,2), 1,dt_99$"0_work" ) ] # 有工作，有工作但現在沒去做
@@ -100,9 +113,16 @@ dt_99[, "0_meet":= 0]
 dt_99[, "0_tele":= 0]
 
 # 新增的配偶
-dt_99[ a1a == "4", "0_gender":= ifelse(dt_99[ a1a == "4"]$rsex ==1, 2, 1)] 
-dt_99[a1a =="4", "0_age":= as.numeric( dt_99[ a1a =="4"]$a7_2)]
-dt_99[a1a =="4", "0_edu":= as.numeric(dt_99[a1a == "4"]$a9)]
+dt_99[, a1a := as.numeric(as.character(a1a))]
+dt_99[,"0_agee":=ifelse(a1a ==4, as.numeric(as.character(a7_2)), dt_99$'0_age') ]
+dt_99[,"0_age":=ifelse(a1a ==4, as.numeric(as.character(a7_2)), dt_99$'0_age') ]
+dt_99[,"0_age":=ifelse(dt_99$'0_age' == 0, NA, dt_99$`0_age`) ]
+dt_99[,"0_gender":=ifelse(a1a ==4, ifelse(rsex ==1, 2,1), dt_99$'0_gender') ]
+dt_99[,"0_edu":=ifelse(a1a ==4, as.numeric(as.character(a9)), dt_99$'0_edu') ]
+# 
+# dt_99[a1a == "4", "0_gender":= ifelse(dt_99[ a1a == "4"]$rsex ==1, 2, 1)] 
+# # dt_99[a1a =="4", "0_age":= as.numeric( dt_99[ a1a =="4"]$a7_2)]
+# dt_99[a1a =="4", "0_edu":= as.numeric(dt_99[a1a == "4"]$a9)]
 
 # 同住子女 (6)
 # No.6 is missing in the data set
