@@ -3,6 +3,7 @@ title: "1996_family_member"
 author: "Hsiao"
 date: "6/27/2021"
 output: html_document
+refine: "2021/09/01"
 ---
 
 ```{r}
@@ -310,7 +311,7 @@ dis_dt_96_y<- setNames(dis_dt_96_y, dis_96)
 dt_96_y[, "0_relation":= 2,]
 dt_96_y[, "0_gender":=  ifelse(dt_96_y$f0103 == 1, 2 , 1 )]
 dt_96_y[, "0_age":= 85 - as.numeric(as.character(dt_96_y$f02a1201))] # missing 也是很多
-dt_96_y[, "0_age":= ifelse(dt_96_y$"0_age" == -3, as.numeric(as.character(dt_96_y$f02a1202)), dt_96_y$"0_age")] # missing 也是很多
+dt_96_y[, "0_age":= ifelse(dt_96_y$"0_age" == -3, as.numeric(as.character(dt_96_y$f02a1202)), dt_96_y$"0_age")] 
 dt_96_y[, "0_age":= ifelse( dt_96_y$"0_age" %in% c( -14, -13, 98, 88), NA, dt_96_y$"0_age" )]  # all these are NAs
 
 dt_96_y[, "0_edu":=  dt_96_y$f02a14]
@@ -499,6 +500,7 @@ fam_96[ ,children:= ifelse( marstat %in% c(6,8), 88, children)]
 fam_96<- fam_96[relationship!=0, ][ !is.na(age) | !is.na(edu)]
 
 
+j<- fam_96[adl_who_help != 88 & adl_who_help!= 0]
 
 
 ```

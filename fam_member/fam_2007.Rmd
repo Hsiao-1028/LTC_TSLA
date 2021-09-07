@@ -3,6 +3,7 @@ title: "fam_2007"
 author: "Hsiao"
 date: "6/30/2021"
 output: html_document
+refine: "2021/09/01"
 ---
 
 
@@ -307,12 +308,12 @@ fam_07<-test
 
 
 ```{r}
-# check about the spouses' age
+# check about the missing spouses' age
 # 還有個問題就是 89年可能把民國跟歲數encode 成同一個欄位... 頭痛
-sum(is.na(dt_96$`0_age`)) # ba in 1996
-sum(is.na(dt_99$`0_age`)) # ba in 1999
-sum(is.na(dt_03$`0_age`)) # ba in 2003
-sum(is.na(dt_07$`0_age`)) # ba in 2007
+sum(is.na(dt_96$`0_age`)) # BA in 1996
+sum(is.na(dt_99$`0_age`)) # BA in 1999
+sum(is.na(dt_03$`0_age`)) # BAC in 2003
+sum(is.na(dt_07$`0_age`)) # BAC in 2007
 
 
 ```
