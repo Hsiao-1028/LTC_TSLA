@@ -3,7 +3,8 @@ title: "1996_family_member"
 author: "Hsiao"
 date: "6/27/2021"
 output: html_document
-refine: "2021/09/01"
+refine: "2021/09/07"
+update: spouses' age(B)
 ---
 
 ```{r}
@@ -24,7 +25,7 @@ library('foreign')
 
 ```{r}
 # import data 
-load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
+# load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
 
 ```
 
@@ -105,9 +106,10 @@ print("Distribution of the Age of Respondents")
 # fam 96o
 dt_89 <- copy(df_c_89)
 dt_89<- as.data.table(dt_89)
-edu<- dt_89[,c("ser_no","speduc") , ]
+edu<- dt_89[,c("ser_no","speduc", "spyrbir", "rocspbir") ]
 edu<- as.data.table(edu)
-
+setnames(edu, c("speduc","rocspbir", "spyrbir"), c("89edu","roc", "89_sage")) #saga!
+edu[, `89_sage`:= ifelse(roc ==2, edu$`89_sage`, ifelse(roc==0, 78- edu$`89_sage`, 78+ edu$`89_sage` ) )] # 處理89年 encode 問題
 
 
 # 存活下來的人： 
@@ -119,10 +121,9 @@ dt_96_o<- edu[dt_96_o, on= "ser_no"]
 # 其他就encode 88 
 dt_96_o[, "0_relation":= 2,]
 dt_96_o[, "0_gender":=  ifelse(dt_96_o$f0103 == 1, 2 , 1 )][, '0_gender':= ifelse(dt_96_o$f02a3 ==1, dt_96_o$'0_gender', 8) ]
-dt_96_o[, "0_age":= 87- as.numeric(dt_89[ser_no %in% unique(survive) ]$spyrbir)] # 要從1989年的回推，但當年資料var 超大，不確定是怎樣
-# dt_96_o[, "0_age":= ifelse( dt_96_y$"0_age" %in% c(-13, -14), 999, dt_96_y$"0_age" )]  # 去掉88, 98, 99 為不適用與missing # 123個NAs
+dt_96_o[, "0_age":= dt_96_o$`89_sage` + 7] 
 
-dt_96_o[, "0_edu":=  dt_96_o$speduc] # Invarance 
+dt_96_o[, "0_edu":=  dt_96_o$"89edu"] # Invarance 
 dt_96_o[, "0_work":=  as.character(dt_96_o$f02a4a)] # 8 == 喪偶，新結婚，
 dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="4", 7,dt_96_o$"0_work" ) ]
 dt_96_o[, "0_work":=  ifelse(dt_96_o$"0_work" =="2", 4, dt_96_o$"0_work" ) ]
@@ -502,7 +503,10 @@ fam_96<- fam_96[relationship!=0, ][ !is.na(age) | !is.na(edu)]
 
 j<- fam_96[adl_who_help != 88 & adl_who_help!= 0]
 
+s<- copy(fam_96)
+s[, main_giver := ifelse( relationship == adl_who_help, 1, 0)]
 
+sss<- s[main_giver ==1]
 ```
 
 

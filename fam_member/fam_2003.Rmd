@@ -3,7 +3,8 @@ title: "hw3"
 author: "Hsiao"
 date: "2021/6/5"
 output: html_document
-refine: "2021/09/01"
+refine: "2021/09/08"
+update: spouses' age(B)
 ---
 
 ```{r}
@@ -267,8 +268,10 @@ missing_89 <- intersect(missing_89, dt_89$qser_no)
 
 ss<- dt_99[qser_no %in% survive, c("qser_no","0_age", "0_edu")]
 s_96 <- dt_96[qser_no %in% missing_96, c("qser_no","0_age", "0_edu")]
-s_89 <- dt_89[qser_no %in% missing_89, c("qser_no", "spyrbir", "speduc")]
-setnames(s_89, c("qser_no", "spyrbir", "speduc"), c("qser_no", "old_age", "old_edu"))
+s_89 <- dt_89[qser_no %in% missing_89, c("qser_no", "spyrbir", "speduc","rocspbir")]
+setnames(s_89, c("qser_no", "spyrbir", "speduc","rocspbir"), c("qser_no", "old_age", "old_edu", "roc"))
+s_89[, old_age := ifelse(roc ==2, s_89$`old_age`, ifelse(roc==0, 78- s_89$`old_age`, 78+ s_89$`old_age` ) )][, c("roc") :=NULL]
+
 s_89[, old_age := as.numeric(as.character(old_age)) +10 ] # age補到99年
 setnames(s_96, c("qser_no", "0_age", "0_edu"), c("qser_no", "old_age", "old_edu"))
 s_96[, old_age := as.numeric(as.character(old_age)) +3 ] # age補到99年
@@ -303,9 +306,6 @@ dt_03o[, "0_tele":= 0]
 dt_03o[ a1a =="4" , "0_gender":= ifelse(dt_03o[a1a =="4"]$sex ==1, 2, 1)]
 dt_03o[ a1a =="4" , "0_age":= as.numeric( as.character(a73))]
 dt_03o[ a1a =="4" , "0_edu":= as.numeric( as.character(a9))]
-
-
-
 
 
 

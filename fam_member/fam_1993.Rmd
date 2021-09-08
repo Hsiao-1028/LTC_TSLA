@@ -4,6 +4,7 @@ author: "Hsiao"
 date: "2021/9/1"
 output: html_document
 refine: "2021/09/06"
+update: spouses' age(B)
 ---
 
 # fam
@@ -117,17 +118,18 @@ dt_93<- s[dt_93, on= "qser_no"]
 
 
 dt_93[, "0_relation":= 2,]
-dt_93[, "0_gender":=  ifelse(dt_93$'89_sex' == 1, 2 , 1 )][, '0_gender':= ifelse(dt_93$a1cores ==1, dt_93$'0_gender', 8)]
-# 分居
-dt_93[, "0_gender":=  ifelse(dt_93$a1awyspe == 1, ifelse(dt_93$`89_sex` ==1,2,1) , dt_93$`0_gender` )]
+dt_93[, "0_gender":=  ifelse(dt_93$'89_sex' == 1, 2 , 1 )][, '0_gender':= ifelse(dt_93$a1cores ==1, dt_93$'0_gender', 8)]# 非同居者先給8
+
+dt_93[, "0_gender":=  ifelse(dt_93$a1awyspe == 1, ifelse(dt_93$`89_sex` ==1,2,1) , dt_93$`0_gender` )] # 分居者include
 
 dt_93[, "0_age":= as.numeric(as.character(dt_93$'89_sage'))+3 ] # 要從1989年的回推
-dt_93[, "0_edu":=  dt_93$`89edu`] # Invarance 
+dt_93[, "0_edu":=  dt_93$`89edu`] # from 1989
 
 dt_93[, "0_work" := NA]
-dt_93[, "0_work":= ifelse( as.numeric( as.character(dt_93$a1cores))==1, as.numeric(as.character(dt_93$a5c)), dt_93$'0_work')][, "0_work":= ifelse(dt_93$"0_work" ==2, 5,dt_93$"0_work" )][, "0_work":= ifelse(dt_93$"0_work" ==8, NA ,dt_93$"0_work" )] #不是一直有婚者我真處理不太了，那邊的coding都亂掉.. 
+dt_93[, "0_work":= ifelse( as.numeric( as.character(dt_93$a1cores))==1, as.numeric(as.character(dt_93$a5c)), dt_93$'0_work')][, "0_work":= ifelse(dt_93$"0_work" ==2, 5,dt_93$"0_work" )][, "0_work":= ifelse(dt_93$"0_work" ==8, NA ,dt_93$"0_work" )] 
 
-dt_93[, "0_marstat":= ifelse(dt_93$a1cores ==1, 1, 8) ] # 沒辦法處理新結婚的4人
+
+dt_93[, "0_marstat":= ifelse(dt_93$a1cores ==1, 1, 8) ]
 dt_93[, "0_children":= dt_93$b6child]
 
 dt_93[, "0_livstat":= ifelse( as.numeric (dt_93$a1cores) == 1 | dt_93$a2cursp ==1 | dt_93$a3cursp ==1, 0, 88 ) ]
@@ -155,16 +157,15 @@ dt_93[, "0_gender":=  ifelse(dt_93$a3cursp == 1, ifelse(dt_93$`89_sex` ==1,2,1) 
 dt_93[, "0_marstat":= ifelse(dt_93$a3cursp ==1 , 1, dt_93$`0_marstat`)]
 
 
-
+# 一起 update這些人的其他數值
 dt_93[, "0_livstat":=  ifelse(dt_93$a4acores ==1, 0,ifelse(dt_93$a4acores ==2, 1, dt_93$`0_livstat` ))]
-
-dt_93[, "0_age" := ifelse(dt_93$a4acores %in% c(1,2),  82 - as.numeric(as.character(dt_93$a4byr)), dt_93$`0_age`)]
+dt_93[, "0_age" := ifelse(dt_93$a4acores %in% c(1,2),  82 - as.numeric(as.character(dt_93$a4byr)), dt_93$`0_age`)][, "0_age":= ifelse(dt_93$`0_age`<9, 99, dt_93$`0_age`)] # 太怪的變成99
 dt_93[, "0_edu" := ifelse(dt_93$a4acores %in% c(1,2),  as.numeric(as.character(dt_93$a4d)), dt_93$`0_edu`)]
 dt_93[, "0_work" := ifelse(dt_93$a4acores %in% c(1,2),  ifelse(dt_93$a4e ==1,1,5), dt_93$`0_work`)]
 
 
 # 下一步做家人系列
-
+dt_93[, "0_workstat" := dt_93$`0_work`][, "0_worktype" := NA] # 配合後面做workstat, worktype melt下去搞
 check<- dt_93[ ,.SD , .SDcols = grep("^0_", names(dt_93),value = TRUE)]
 
 ```
@@ -204,35 +205,31 @@ check<- dt_93[ ,.SD , .SDcols = grep("^0_", names(dt_93),value = TRUE)]
 
 
 # Now is their family members
+# 同住子女15位
 for(i in 2:9){setnames(dt_93, paste0( "relp0", i), paste0(i-1 ,"_relation"))}
 for(i in 2:4){setnames(dt_93, paste0( "sexp0", i), paste0(i-1 ,"_gender"))} # 05 ! 
 for(i in 5:9){setnames(dt_93, paste0( "sexp0", i,"m"), paste0(i-1 ,"_gender"))} # 05 ! 
 for(i in 2:9){setnames(dt_93, paste0( "bx2p0", i), paste0(i-1 ,"_age"))}
 for(i in 2:9){setnames(dt_93, paste0( "bx5p0", i), paste0(i-1 ,"_edu"))}
-for(i in 2:9){setnames(dt_93, paste0( "bx62p0", i), paste0(i-1 ,"_work"))}
+for(i in 2:9){setnames(dt_93, paste0( "bx61p0", i), paste0(i-1 ,"_workstat"))}
+for(i in 2:9){setnames(dt_93, paste0( "bx62p0", i), paste0(i-1 ,"_worktype"))}
 for(i in 2:9){setnames(dt_93, paste0( "bx3p0", i), paste0(i-1 ,"_marstat"))}
 for(i in 2:9){setnames(dt_93, paste0( "bx4p0", i), paste0(i-1 ,"_children"))}
 for(i in 2:9){setnames(dt_93, paste0( "b15p0", i), paste0(i-1 ,"_help_iadl"))}
 for(i in 2:9){setnames(dt_93, paste0( "b16p0", i), paste0(i-1 ,"_help_adl"))}
-# for(i in 2:9){setnames(dt_93, paste0( "b5ap0", i), paste0(i-1 ,"_livstat"))} # 0 在codebook裏面是 88 
-
 
 for(i in 10:16){setnames(dt_93, paste0( "relp", i), paste0(i-1 ,"_relation"))}
-# for(i in :4){setnames(dt_93, paste0( "sexp0", i), paste0(i-1 ,"_gender"))} # 05 ! 
-for(i in 10:16){setnames(dt_93, paste0( "sexp", i,"m"), paste0(i-1 ,"_gender"))} # 05 ! 
-
+for(i in 10:16){setnames(dt_93, paste0( "sexp", i,"m"), paste0(i-1 ,"_gender"))} 
 for(i in 10:16){setnames(dt_93, paste0( "bx2p", i), paste0(i-1 ,"_age"))}
 for(i in 10:16){setnames(dt_93, paste0( "bx5p", i), paste0(i-1 ,"_edu"))}
-for(i in 10:16){setnames(dt_93, paste0( "bx62p", i), paste0(i-1 ,"_work"))}
+for(i in 10:16){setnames(dt_93, paste0( "bx61p", i), paste0(i-1 ,"_workstat"))}
+for(i in 10:16){setnames(dt_93, paste0( "bx62p", i), paste0(i-1 ,"_worktype"))}
 for(i in 10:16){setnames(dt_93, paste0( "bx3p", i), paste0(i-1 ,"_marstat"))}
 for(i in 10:16){setnames(dt_93, paste0( "bx4p", i), paste0(i-1 ,"_children"))}
 for(i in 10:16){setnames(dt_93, paste0( "b15p", i), paste0(i-1 ,"_help_iadl"))}
 for(i in 10:16){setnames(dt_93, paste0( "b16p", i), paste0(i-1 ,"_help_adl"))}
-# for(i in 10:16){setnames(dt_93, paste0( "b5ap", i), paste0(i-1 ,"_livstat"))} # 0 應該是住在一起？？
 
-# for ( i in 2:9){ dt_93[, paste0(i-1 , "_work"):= ifelse(paste0("bx61p0", i) %nin% c(8,9), 1, paste0("bx62p0", i)  )]}
-
-
+# 改livstat的狀況
 myfun <- function(x){ ifelse( x !=0, 1, 0)}
 cols <- grep("_livstat$", names(dt_93), value = TRUE)
 setDT(dt_93)[, (cols) := lapply(.SD, myfun), .SDcols= cols ]
@@ -240,21 +237,6 @@ setDT(dt_93)[, (cols) := lapply(.SD, myfun), .SDcols= cols ]
 
 # dt_93$`1_livstat` <- ifelse(dt_93$`1_livstat` !=0, 1, 0)
 # dt_93$`2_livstat` <- ifelse(dt_93$`2_livstat` !=0, 1, 0)
-# dt_93$`3_livstat` <- ifelse(dt_93$`3_livstat` !=0, 1, 0)
-# dt_93$`4_livstat` <- ifelse(dt_93$`4_livstat` !=0, 1, 0)
-# dt_93$`5_livstat` <- ifelse(dt_93$`5_livstat` !=0, 1, 0)
-# dt_93$`6_livstat` <- ifelse(dt_93$`6_livstat` !=0, 1, 0)
-# dt_93$`7_livstat` <- ifelse(dt_93$`7_livstat` !=0, 1, 0)
-# dt_93$`8_livstat` <- ifelse(dt_93$`8_livstat` !=0, 1, 0)
-# dt_93$`9_livstat` <- ifelse(dt_93$`9_livstat` !=0, 1, 0)
-# dt_93$`10_livstat` <- ifelse(dt_93$`10_livstat` !=0, 1, 0)
-# dt_93$`11_livstat` <- ifelse(dt_93$`11_livstat` !=0, 1, 0)
-# dt_93$`12_livstat` <- ifelse(dt_93$`12_livstat` !=0, 1, 0)
-# dt_93$`13_livstat` <- ifelse(dt_93$`13_livstat` !=0, 1, 0)
-# dt_93$`14_livstat` <- ifelse(dt_93$`14_livstat` !=0, 1, 0)
-# dt_93$`15_livstat` <- ifelse(dt_93$`15_livstat` !=0, 1, 0)
-# dt_93$`16_livstat` <- ifelse(dt_93$`16_livstat` !=0, 1, 0)
-
 
 # j<- function(i){
 #   dt_93[ ,paste0(i, '_livwhere') := ifelse(dt_93[,paste0(i, '_livstat')] == 0, 0, 99)]
@@ -276,21 +258,21 @@ setDT(dt_93)[, (cols) := lapply(.SD, myfun), .SDcols= cols ]
 # wherecol <- grep(pattern = "livwhere$", names(dt_93), value = TRUE)
 # setDT(dt_93)[, wherecol:= .SD , .SDcols = livcol]
 
+# 因為是同住，所以這裡都encode為0 
 for( i in 1:15){dt_93[, paste0(i,"_livstat"):= 0 ]}
 for( i in 1:15){dt_93[, paste0(i,"_livwhere"):= 0 ]}
 for( i in 1:15){dt_93[, paste0(i,"_meet"):= 0 ]}
 for( i in 1:15){dt_93[, paste0(i,"_tele"):= 0 ]}
 
 
+
 # 非同住子女
-
 for(i in 1:9){setnames(dt_93, paste0( "relq0", i), paste0(i+15 ,"_relation"))}
-for(i in 1:9){setnames(dt_93, paste0( "sexq0", i), paste0(i+15 ,"_gender"))} # 05 ! 
-
-# for(i in 5:9){setnames(dt_93, paste0( "sexp0", i,"m"), paste0(i-1 ,"_gender"))} # 05 ! 
+for(i in 1:9){setnames(dt_93, paste0( "sexq0", i), paste0(i+15 ,"_gender"))} 
 for(i in 1:9){setnames(dt_93, paste0( "by2q0", i), paste0(i+15 ,"_age"))}
 for(i in 1:9){setnames(dt_93, paste0( "by5q0", i), paste0(i+15 ,"_edu"))}
-for(i in 1:9){setnames(dt_93, paste0( "by62q0", i), paste0(i+15 ,"_work"))}
+for(i in 1:9){setnames(dt_93, paste0( "by61q0", i), paste0(i+15 ,"_workstat"))}
+for(i in 1:9){setnames(dt_93, paste0( "by62q0", i), paste0(i+15 ,"_worktype"))}
 for(i in 1:9){setnames(dt_93, paste0( "by3q0", i), paste0(i+15 ,"_marstat"))}
 for(i in 1:9){setnames(dt_93, paste0( "by4q0", i), paste0(i+15 ,"_children"))}
 
@@ -298,52 +280,84 @@ for( i in 1:9){dt_93[, paste0(i+15,"_livstat"):= 1 ]}
 for(i in 1:9){setnames(dt_93, paste0( "by7q0", i), paste0(i+15 ,"_livwhere"))}
 for(i in 1:9){setnames(dt_93, paste0( "by9q0", i), paste0(i+15 ,"_meet"))} # 你拜訪他 # 他拜訪你是by11q0_
 for(i in 1:9){setnames(dt_93, paste0( "by12q0", i), paste0(i+15 ,"_tele"))}
-
 for(i in 1:9){setnames(dt_93, paste0( "b15q0", i), paste0(i+15 ,"_help_iadl"))}
 for(i in 1:9){setnames(dt_93, paste0( "b16q0", i), paste0(i+15 ,"_help_adl"))}
 
 
 # 10:15
 for(i in 10:15){setnames(dt_93, paste0( "relq", i), paste0(i+15 ,"_relation"))}
-for(i in 10:15){setnames(dt_93, paste0( "sexq", i), paste0(i+15 ,"_gender"))} # 05 ! 
-
-# for(i in 5:9){setnames(dt_93, paste0( "sexp0", i,"m"), paste0(i-1 ,"_gender"))} # 05 ! 
+for(i in 10:15){setnames(dt_93, paste0( "sexq", i), paste0(i+15 ,"_gender"))} 
 for(i in 10:15){setnames(dt_93, paste0( "by2q", i), paste0(i+15 ,"_age"))}
 for(i in 10:15){setnames(dt_93, paste0( "by5q", i), paste0(i+15 ,"_edu"))}
-for(i in 10:15){setnames(dt_93, paste0( "by62q", i), paste0(i+15 ,"_work"))}
+for(i in 10:15){setnames(dt_93, paste0( "by61q", i), paste0(i+15 ,"_workstat"))}
+for(i in 10:15){setnames(dt_93, paste0( "by62q", i), paste0(i+15 ,"_worktype"))}
 for(i in 10:15){setnames(dt_93, paste0( "by3q", i), paste0(i+15 ,"_marstat"))}
 for(i in 10:15){setnames(dt_93, paste0( "by4q", i), paste0(i+15 ,"_children"))}
 
 for( i in 10:15){dt_93[, paste0(i+15,"_livstat"):= 1 ]}
 for(i in 10:15){setnames(dt_93, paste0( "by7q", i), paste0(i+15 ,"_livwhere"))}
-for(i in 10:15){setnames(dt_93, paste0( "by9q", i), paste0(i+15 ,"_meet"))} # 你拜訪他 # 他拜訪你是by11q0_
+for(i in 10:15){setnames(dt_93, paste0( "by9q", i), paste0(i+15 ,"_meet"))} # 你拜訪他 # 他拜訪你是by11q__
 for(i in 10:15){setnames(dt_93, paste0( "by12q", i), paste0(i+15 ,"_tele"))}
-
 for(i in 10:15){setnames(dt_93, paste0( "b15q", i), paste0(i+15 ,"_help_iadl"))}
 for(i in 10:15){setnames(dt_93, paste0( "b16q", i), paste0(i+15 ,"_help_adl"))}
 
+cols<- c(unlist( lapply(paste0("^", 1:30,"_"), function(x){grep(x, names(dt_93), value = T)})))
+cols<- append("ser_no",cols)
+# fam_pre_93<- dt_93[, cols, with=FALSE]
+
+```
+
+
+
+```{r}
+ss <- copy(dt_93)
+
 # 其他交換照顧者
-for(i in 1:9){setnames(dt_93, paste0( "relr0", i), paste0(i+30 ,"_relation"))}
-for( i in 1:10){dt_93[, paste0(i+30,"_gender"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_age"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_edu"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_work"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_marstat"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_children"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_livstat"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_livwhere"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_meet"):= NA ]}
-for( i in 1:10){dt_93[, paste0(i+30,"_tele"):= NA ]}
-for(i in 1:9){setnames(dt_93, paste0( "b15r0", i), paste0(i+30 ,"_help_iadl"))}
-for(i in 1:9){setnames(dt_93, paste0( "b16r0", i), paste0(i+30 ,"_help_adl"))}
+# adl, iadl help 都==0的人應該是其他幫助，或是受到幫助者
+for(i in 1:9){setnames(ss, paste0( "relr0", i), paste0(i+30 ,"_relation"))}
+for(i in 1:9){setnames(ss, paste0( "b15r0", i), paste0(i+30 ,"_help_iadl"))}
+for(i in 1:9){setnames(ss, paste0( "b16r0", i), paste0(i+30 ,"_help_adl"))}
+setnames(ss, c('relr10', 'b15r10', 'b16r10'), c("40_relation", "40_help_iadl", "40_help_adl"))
 
-setnames(dt_93, c('relr10', 'b15r10', 'b16r10'), c("40_relation", "40_help_iadl", "40_help_adl"))
+# 中間這些demo 皆沒有問
+for( i in 1:10){ss[, paste0(i+30,"_gender"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_age"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_edu"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_workstat"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_worktype"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_marstat"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_children"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_livstat"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_livwhere"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_meet"):= NA ]}
+for( i in 1:10){ss[, paste0(i+30,"_tele"):= NA ]}
 
+cols<- c(unlist( lapply(paste0("^", 31:40,"_"), function(x){grep(x, names(ss), value = T)})))
+cols<- append("ser_no" ,cols)
+ss<- ss[, cols, with=FALSE]
+# 把這些關係merge回去 help_adl
+# melt 之後做
 
-cols<- c(unlist( lapply(paste0("^", 0:40,"_"), function(x){grep(x, names(dt_93), value = T)})))
-# class(cols)
+library(reshape)
+
+liv<- c("_relation", "_help_adl", "_help_iadl")
+cols<- unlist(lapply(31:40, function(x){paste0(x,liv)}))
+ss<- ss[, .SD, .SDcols=cols ] 
+x<- list( c(paste0(31:40, "_relation")),c(paste0(31:40, "_help_adl")),c(paste0(31:40, "_help_iadl")))
+
+ss_reshape<- reshape(ss, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no") , v.names = c("relationship","help_adl", "help_iadl"))
+
+ss_reshape <- as.data.table(ss_reshape)
+others_adl<- ss_reshape[relationship !=88][ help_adl ==2 ] # 其實只有三人
+others_iadl<- ss_reshape[relationship !=88][ help_adl !=2 & help_iadl ==2 ] 
+# 綜合、媳婦、其他姪輩 ->都沒很重要且不是單一，因此就不merge回去了。
+
+```
+
+```{r}
+
+cols<- c(unlist( lapply(paste0("^", 0:30,"_"), function(x){grep(x, names(dt_93), value = T)})))
 fam_93<- dt_93[, cols, with=FALSE]
-
 
 ```
 
@@ -356,7 +370,7 @@ fam_93<- dt_93[, cols, with=FALSE]
  # myfun <- function(x){ ifelse( x ==0, 0, 99)}
  # cols <- grep("_livstat$", names(dt_93), value = TRUE)
  # setDT(dt_93)[, (cols) := lapply(.SD, myfun), .SDcols= cols ]
- # 
+
 
 # function to reclassify columns
   re_marstat = function(x)  { ifelse(x==88, 8, x
@@ -374,8 +388,12 @@ fam_93<- dt_93[, cols, with=FALSE]
                      ))))))))) }
   
   
-  # work 混亂 先與冠銘討論
-  
+  # work 
+  # workstat -> 1: 全職 2: 兼職 3: 失業
+  # work type  different among stats
+  # melt後再處理
+
+
 
 cols <- grep("_edu$", names(dt_93), value = TRUE)
 cols<- cols[cols != "0_edu"]
@@ -393,20 +411,14 @@ fam_93[, (cols):= lapply(.SD, re_marstat), .SDcols = cols]
 
 
 ```{r}
-# merge later 
+# merge 
 
 data = load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
-# there are dataframes, now turn into datatable
-#elder03 = data.table(df_c_03_ELDER)
-# x <-elder03[sex ==1 & mail ==1,]
-# elder03[order(sex, -mail)]
-# x<- elder03[,list(sex,mail)] # use list to ensure datatable type is preserved 
-#rename the column :elder03[,list( sexsex =sex, mailmail =mail)]
-# head(x)
+
 
 # General form of datatable : DT[i, j, by] representating row, column, group by
 dt_89 <- data.table(df_c_89)
-# 89年抓education, age, ethnicty 而已
+
 
 df_89 <- dt_89[, "survey_year":= 1989] 
 demo_89 <- dt_89[ , c("qtype", "ser_no", "survey_year","rsex", "rage","reduc","ethnicty","marstat")]
@@ -435,33 +447,48 @@ dt_93[, i.marstat:= NULL]
 ```{r}
 library(reshape)
 
-#first deal help ?? 重複??
-liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_children","_livstat","_livwhere","_meet","_tele", "_help_adl", "_help_iadl")
+liv<- c("_relation","_gender","_age","_edu","_workstat","_worktype","_marstat","_children","_livstat","_livwhere","_meet","_tele", "_help_adl", "_help_iadl")
 
-cols<- unlist(lapply(0:40, function(x){paste0(x,liv)}))
+cols<- unlist(lapply(0:30, function(x){paste0(x,liv)}))
 cols<- append(c("ser_no", "survey_year", "qtype"), cols)
 tt<- dt_93[, .SD, .SDcols=cols ] 
 
-x<- list( c(paste0(0:40, "_relation")), c(paste0(0:40, "_gender")), c(paste0(0:40, "_age")), c(paste0(0:40,"_edu")), c(paste0(0:40, "_work")), c(paste0(0:40, "_marstat")), c(paste0(0:40, "_children")), c(paste0(0:40, "_livstat")), c(paste0(0:40, "_livwhere")), c(paste0(0:40, "_meet")), c(paste0(0:40, "_tele")),c(paste0(0:40, "_help_adl")),c(paste0(0:40, "_help_iadl")))
+x<- list( c(paste0(0:30, "_relation")), c(paste0(0:30, "_gender")), c(paste0(0:30, "_age")), c(paste0(0:30,"_edu")), c(paste0(0:30, "_workstat")),c(paste0(0:30, "_worktype")),  c(paste0(0:30, "_marstat")), c(paste0(0:30, "_children")), c(paste0(0:30, "_livstat")), c(paste0(0:30, "_livwhere")), c(paste0(0:30, "_meet")), c(paste0(0:30, "_tele")),c(paste0(0:30, "_help_adl")),c(paste0(0:30, "_help_iadl")))
 
-dt_93_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype") , v.names = c("relationship","gender","age","edu","work","marstat","children","livstat","livwhere","meet","tele", "help_adl", "help_iadl"))
+dt_93_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype") , v.names = c("relationship","gender","age","edu","workstat","worktype","marstat","children","livstat","livwhere","meet","tele", "help_adl", "help_iadl"))
 
 dt_93_reshape <- as.data.table(dt_93_reshape)
 dt_93_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
 
-jj<- dt_93_reshape[help_adl %in% c(2)]
-
-jj[, n_giver := ifelse(help_adl ==2, 1, 0)][, n_giver := sum(n_giver), by= ser_no]
-# jj[, main_giver := ifelse(help_adl ==2 & )]
-
+# jj<- dt_93_reshape[help_adl %in% c(2)]
+# 
+# jj[, n_giver := ifelse(help_adl ==2, 1, 0)][, n_giver := sum(n_giver), by= ser_no]
+# 
+# table(jj$n_giver)
+# # jj[, main_giver := ifelse(help_adl ==2 & )]
+# 
+# jjj<- fam_93[help_adl ==2]
+# jjj<- fam_93[help_adl ==1]
 ```
 
 ```{r}
 # final check : 
 
-
 fam_93 <- copy(dt_93_reshape)
 cols<- c("ser_no", "survey_year","relationship","gender","age","edu","work","marstat","children", "livstat","livwhere","meet","tele","help_adl","help_iadl")
+
+# 調整work
+fam_93[, work:= ifelse( relationship == 2 | is.na(workstat) & is.na(worktype), workstat, paste0(workstat, worktype))]
+fam_93[relationship !=2 , work := recode( work, 
+      "11" = "1", "12" = "1", "13" = "1", "14" = "1", "15" = "1", "16" = "1", "17" = "1", "18" = "1", "19" = "1",
+      "21" = "7", "22" = "1", "23" = "7", "24" = "7", "25" = "1", "26" = "1", 
+      "31" = "5", "32" = "5", "33" = "4", "34" = "2", "35" = "3", "36" = "5", "37" = "5", "38" = "5", "39" = "5")]
+fam_93[ relationship !=2, work:= ifelse(work %nin% c(1:7) & work != 88, 99, work)][, c('workstat', 'worktype') := NULL]
+
+
+
+# 兩個都是na的人共有56人 ->交換照顧者
+table(fam_93[relationship !=2]$work)
 
 fam_93[, (cols):= lapply(.SD, function(x){x<- as.numeric(as.character(x))}), .SDcols=cols ]
 fam_93<- as.data.table(fam_93)
@@ -469,30 +496,71 @@ fam_93<- as.data.table(fam_93)
 fam_93 <-fam_93[gender!= 8][ livwhere != 88] # 排除78年沒有結婚，或是結婚但配偶不在者
 
 
-sum(fam_93$help_adl %in% c(1))
+
+others_adl[, survey_year := 1993][, qtype := "B"][, member_id := paste0(qtype, ser_no, ID_i)] # 把其他交換照顧者merge回去
+others_iadl[, survey_year := 1993][, qtype := "B"][, member_id := paste0(qtype, ser_no, ID_i)] # 把其他交換照顧者merge回去
+
+fam_93<- rbind(fam_93, others_adl, fill = TRUE)
+fam_93<- rbind(fam_93, others_iadl, fill = TRUE)
+# sum(fam_93$help_adl %in% c(1))
 
 ```
 
 
 
+```{r}
+# adl_who_help
 
-# gender !=8 & age ==88 ->真的88歲的親屬
-# gender !=8 & edu==88, work==88 -> 6歲以下的親屬
-table(sort(fam_96$livstat))
 
-fam_96[,livstat:= ifelse(fam_96$livstat== 0, 999, livstat)] # 0 改成同住, 1 改成不同住
-fam_96[,livstat:= ifelse(fam_96$livstat== 1, 0, livstat)]
-fam_96[,livstat:= ifelse(fam_96$livstat== 999, 1, livstat)]
-fam_96[,livstat:= ifelse(fam_96$livstat== 3, 996, livstat)] # 3改成工作 , 4改成兵役
-fam_96[,livstat:= ifelse(fam_96$livstat== 4, 3, livstat)]
-fam_96[,livstat:= ifelse(fam_96$livstat== 996, 4, livstat)]
-table(sort(fam_96$livstat))
+jj<- copy(fam_93)
+jj[, n_major_giver := ifelse(help_adl ==2, 1, 0)][, n_major_giver := sum(n_major_giver), by= ser_no][, major_giver := ifelse(n_major_giver ==1 & help_adl ==2 ,1,0)]
 
-fam_96[ ,children:= ifelse( marstat %in% c(6,8), 88, children)]
+s<- jj[major_giver ==1]
+s<- s[, c('ser_no', 'relationship')]
+setnames(s, 'relationship', 'adl_who_help')
 
+
+jj<- s[jj, on='ser_no']
+
+
+jj[, n_major_i_giver := ifelse(help_iadl ==2, 1, 0)][, n_major_i_giver := sum(n_major_i_giver), by= ser_no][, major_i_giver := ifelse(n_major_i_giver ==1 & help_iadl ==2 ,1,0)]
+
+s<- jj[major_i_giver ==1]
+s<- s[, c('ser_no', 'relationship')]
+setnames(s, 'relationship', 'iadl_who_help')
+
+jj<- s[jj, on='ser_no']
+
+
+
+fam_93 <- copy(jj)
+fam_93[, c('n_major_giver' ,'n_major_i_giver', 'major_giver', 'major_i_giver', "help_adl", "help_iadl") := NULL][, adl_who_help := ifelse(is.na(adl_who_help), 88, adl_who_help)][, iadl_who_help := ifelse(is.na(iadl_who_help), 88, iadl_who_help)]
+
+# fam_93[, main_giver := ifelse( relationship == adl_who_help, 1, 0)]
+# table(fam_93[ main_giver ==1]$adl_who_help)
+
+
+# 
+# jj[, n_major_giver := ifelse(help_adl ==2, 1, 0)][, n_minor_giver := ifelse(help_adl ==1, 1, 0)]
+# jj[, n_major_giver := sum(n_major_giver), by= ser_no][, n_minor_giver := sum(n_minor_giver), by= ser_no]
+# # 這邊是整個ser_no
+# 
+# jj[, n_adl_giver := ifelse( n_major_giver !=0, n_major_giver, n_minor_giver)]
+# # jj[, main_giver := ifelse(help_adl ==2 & )]
+# 
+# table(jj$n_major_giver)
+# table(jj$n_minor_giver)
+# table(jj$n_adl_giver)
+# 
+# View(jj[n_adl_giver == 1])
+# 
+# sum(jj[ help_adl %in% c(1,2)]$n_major_giver ==1)
+# sum(jj$n_minor_giver ==1)
+# sum(jj$n_adl_giver ==1)
 
 
 ```
+
 
 
 

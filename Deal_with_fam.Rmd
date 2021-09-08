@@ -64,7 +64,7 @@ library("conclust")
 ```{r}
 # Skip this part
 # This part is merging the melted data from each year
-fam<- rbind(fam_96, fam_99, fam_03, fam_07)
+fam<- rbind(fam_93, fam_96, fam_99, fam_03, fam_07)
 
 table(sort(fam$survey_year))
 table(sort(fam$qtype))
@@ -99,12 +99,16 @@ x<-as.data.table(x)
 sort(table(x), decreasing = TRUE)
 
 
-write.table(fam, file = "fam_v5.csv", sep = ",") # include childrens
+write.table(fam, file = "fam_v6.csv", sep = ",") 
+# v5:include childrens
+# v6 spouses' age correction, added dt_93
 
 table(sort(fam$adl_who_help))
 class(fam$adl_who_help)
 # check <- read.csv("/Users/Ano/Desktop/HRS_Chao/TSLA/fam_v4.csv") # added iadl_who_help, work change 
 # adl_who_help =0 -> 沒有人幫忙
+
+
 ```
 
 
@@ -112,7 +116,7 @@ class(fam$adl_who_help)
 
 ```{r}
 # matching 
-fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/fam_v5.csv") # added spouse and iadl and children
+fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/fam_v6.csv") # added spouse and iadl and children
 fam<- as.data.table(fam)
 fam[, "ID":= paste0(qtype, ser_no, "_", relationship)]
 fam[,c("member_id","ID_i"):=NULL]
@@ -125,7 +129,7 @@ test[, education:= 88][, education := ifelse(test$edu %in% c(0,90), 0, test$educ
 
 
 # test<- test[0<age &age <98 | education !=88] # 扣除大概 2000筆
-test<- test[0<age & age<98 & education !=88] # 扣除大概20000筆
+test<- test[0<age & age<120 & education !=88] # 扣除大概20000筆
 
 
 test[ ,education := ifelse(test$education== 88,NA ,test$education)]

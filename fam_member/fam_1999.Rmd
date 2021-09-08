@@ -3,7 +3,8 @@ title: "fam_1999"
 author: "Hsiao"
 date: "6/30/2021"
 output: html_document
-refine: "2021/09/01"
+refine: "2021/09/08"
+update: spouses' age(B)
 ---
 
 <!-- ```{r} -->
@@ -82,11 +83,13 @@ survive<- intersect(dt_96$qser_no, dt_99$qser_no)
 
 ss<- dt_96[qser_no %in% survive, c("qser_no", "rsex", "0_age", "0_edu")]
 
-missing<- dt_99$qser_no[! dt_99$qser_no %in% ss$qser_no]  # 就是這些人 等1993年的資料來再處理
+missing<- dt_99$qser_no[! dt_99$qser_no %in% ss$qser_no] 
 missing<- intersect(missing, dt_89$qser_no)
 
-s <- dt_89[qser_no %in% missing, c("qser_no", "rsex", "spyrbir", "speduc")]
-setnames(s, c("qser_no", "rsex", "spyrbir", "speduc"), c("qser_no","rsex_96", "96age", "96edu"))
+s <- dt_89[qser_no %in% missing, c("qser_no", "rsex", "spyrbir", "speduc", "rocspbir")]
+setnames(s, c("qser_no", "rsex", "spyrbir", "speduc", "rocspbir"), c("qser_no","rsex_96", "89_sage", "96edu", "roc"))
+s[, "96age" := ifelse(roc ==2, s$`89_sage`, ifelse(roc==0, 78- s$`89_sage`, 78+ s$`89_sage` ) )][, c("89_sage", "roc") :=NULL][, "96age":= s$`96age`+7]
+
 setnames(ss, c("qser_no", "rsex", "0_age", "0_edu"), c("qser_no","rsex_96", "96age", "96edu"))
 ss<- rbind(ss, s)
 
@@ -257,6 +260,8 @@ table(sort(fam_99$children))
 
 
 fam_99<-test
+
+
 ```
 
 
