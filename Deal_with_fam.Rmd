@@ -125,14 +125,14 @@ fam[,c("member_id","ID_i"):=NULL]
 test<- copy(fam)
 
 test[, birthyear := survey_year - age - 1911] 
-test[, education:= 88][, education := ifelse(test$edu %in% c(0,90), 0, test$education)][, education := ifelse(test$edu %in% c(1:6), 6, test$education)][, education := ifelse(test$edu %in% c(7:9),9 , test$education)][, education := ifelse(test$edu %in% c(10:12, 91, 92), 12, test$education)][, education := ifelse(test$edu %in% c(13:16), 16, test$education)][, education := ifelse(test$edu %in% c(17:19), 17, test$education)][, education := ifelse(test$edu %in% c(88,98,99), 88, test$education)]
+test[, education:= 88][, education := ifelse(test$edu %in% c(0,90), 0, test$education)][, education := ifelse(test$edu %in% c(1:6), 6, test$education)][, education := ifelse(test$edu %in% c(7:9),9 , test$education)][, education := ifelse(test$edu %in% c(10:12, 91, 92), 12, test$education)][, education := ifelse(test$edu %in% c(13:16), 16, test$education)][, education := ifelse(test$edu %in% c(17:19), 17, test$education)][, education := ifelse(test$edu %in% c(88,98,99), 88, test$education)] # 整理education
 
 
-# test<- test[0<age &age <98 | education !=88] # 扣除大概 2000筆
-test<- test[0<age & age<120 & education !=88] # 扣除大概20000筆
+# test<- test[0<age &age <120 | education !=88] # 扣除大概 2000筆
+test<- test[0<age & age<120 & education !=88] # 扣除大概10000筆
 
 
-test[ ,education := ifelse(test$education== 88,NA ,test$education)]
+test[ ,education := ifelse(test$education== 88,NA ,test$education)] # is.NA ==0
 
 test[, qser_no:= paste0(qtype,  ser_no)]
 
@@ -159,9 +159,60 @@ table(sort(test$education))
 # gender == 
 # education %in% c(-6,6)
 
+# adding 1993 -> detect five
+
+detect_5<- function(x,y,z,u,v,data,ID){
+  for (i in unique(data$ID)){
+  if(length(data[ ID ==i &survey_year ==x ]$birthyear)==0 | length(data[ ID ==i &survey_year ==y]$birthyear) ==0 |length(data[ ID ==i &survey_year ==z ]$birthyear)==0 | length(data[ ID ==i &survey_year ==u]$birthyear) ==0 | length(data[ ID ==i &survey_year ==v]$birthyear) ==0 
+     
+     |length(data[ ID ==i &survey_year ==x ]$gender)==0 | length(data[ ID ==i &survey_year ==y]$gender) ==0 |length(data[ ID ==i &survey_year ==z ]$gender)==0 | length(data[ ID ==i &survey_year ==u]$gender) ==0 | length(data[ ID ==i &survey_year ==v]$gender) ==0 
+     
+     |length(data[ ID ==i &survey_year ==x ]$education)==0 | length(data[ ID ==i &survey_year ==y]$education) ==0 |length(data[ ID ==i &survey_year ==z ]$education)==0 | length(data[ ID ==i &survey_year ==u]$education) ==0 | length(data[ ID ==i &survey_year ==v]$education) ==0
+     ){next}
+  
+   else if(length(data[ ID ==i &survey_year ==x ]$birthyear)>1 | length(data[ ID ==i &survey_year ==y]$birthyear) >1 |length(data[ ID ==i &survey_year ==z ]$birthyear)>1 | length(data[ ID ==i &survey_year ==u]$birthyear) >1 | length(data[ ID ==i &survey_year ==v]$birthyear) >1 
+           
+           |length(data[ ID ==i &survey_year ==x ]$gender)>1 | length(data[ ID ==i &survey_year ==y]$gender) >1 |length(data[ ID ==i &survey_year ==z ]$gender)>1 | length(data[ ID ==i &survey_year ==u]$gender) >1 | length(data[ ID ==i &survey_year ==v]$gender) >1 
+           
+           |length(data[ ID ==i &survey_year ==x ]$education)>1 | length(data[ ID ==i &survey_year ==y]$education) >1 |length(data[ ID ==i &survey_year ==z ]$education)>1 | length(data[ ID ==i &survey_year ==u]$education) >1 | length(data[ ID ==i &survey_year ==v]$education) >1
+   ){ data[ID ==i, age_acc:= FALSE][ID ==i, gender_acc:= FALSE][ID ==i, education_acc:= FALSE] }
+     
+     else{
+  data[ID ==i, age_acc:= ifelse( (data[ ID ==i &survey_year ==u ]$birthyear  - data[ ID ==i &survey_year ==z]$birthyear) %in% c(-3:4) & (data[ ID ==i &survey_year ==z ]$birthyear  - data[ ID ==i &survey_year ==y]$birthyear) %in% c(-3:4) & (data[ ID ==i &survey_year ==y ]$birthyear  - data[ ID ==i &survey_year ==x]$birthyear) %in% c(-3:4) & (data[ ID ==i &survey_year ==x ]$birthyear  - data[ ID ==i &survey_year ==v ]$birthyear) %in% c(-3:4)
+                                 , TRUE, FALSE)]
+  data[ID ==i, gender_acc := ifelse(data[ ID ==i &survey_year ==z ]$gender  != data[ ID ==i &survey_year ==u]$gender | data[ ID ==i &survey_year ==z ]$gender != data[ ID ==i &survey_year ==y]$gender | data[ ID ==i &survey_year ==y ]$gender  != data[ ID ==i &survey_year ==x ]$gender  | data[ ID ==i &survey_year ==x ]$gender  != data[ ID ==i &survey_year ==v ]$gender
+                                    , FALSE, TRUE) ]
+  data[ID ==i, education_acc :=  ifelse ( abs(data[ ID ==i &survey_year ==u ]$education  - data[ ID ==i &survey_year ==z]$education) >6|abs(data[ ID ==i &survey_year ==z ]$education  - data[ ID ==i &survey_year ==y]$education) >6 | abs(data[ ID ==i &survey_year ==y ]$education  - data[ ID ==i &survey_year ==x]$education) >6| abs(data[ ID ==i &survey_year ==x ]$education  - data[ ID ==i &survey_year ==v]$education) >6
+                                    , FALSE, TRUE)]
+     }}}
+
+re_detect_5<- function(x,y,z,u,v){
+  for (i in unique(remaining$k_group)){
+  if(length(remaining[ k_group ==i &survey_year ==x ]$birthyear)==0 | length(remaining[ k_group ==i &survey_year ==y]$birthyear) ==0 |length(remaining[ k_group ==i &survey_year ==z ]$birthyear)==0 | length(remaining[ k_group ==i &survey_year ==u]$birthyear) ==0 | length(remaining[ k_group ==i &survey_year ==v]$birthyear) ==0
+     |length(remaining[ k_group ==i &survey_year ==x ]$gender)==0 | length(remaining[ k_group ==i &survey_year ==y]$gender) ==0 |length(remaining[ k_group ==i &survey_year ==z ]$gender)==0 | length(remaining[ k_group ==i &survey_year ==u]$gender) ==0 | length(remaining[ k_group ==i &survey_year ==v]$gender) ==0 
+     |length(remaining[ k_group ==i &survey_year ==x ]$education)==0 | length(remaining[ k_group ==i &survey_year ==y]$education) ==0 |length(remaining[ k_group ==i &survey_year ==z ]$education)==0 | length(remaining[ k_group ==i &survey_year ==u]$education) ==0 | length(remaining[ k_group ==i &survey_year ==v]$education) ==0
+     ){next}
+    
+    else if(length(remaining[ k_group ==i &survey_year ==x ]$birthyear)>1 | length(remaining[ k_group ==i &survey_year ==y]$birthyear) >1 |length(remaining[ k_group ==i &survey_year ==z ]$birthyear)>1 | length(remaining[ k_group ==i &survey_year ==u]$birthyear) >1 | length(remaining[ k_group ==i &survey_year ==v]$birthyear) >1 
+            |length(remaining[ k_group ==i &survey_year ==x ]$gender)>1 | length(remaining[ k_group ==i &survey_year ==y]$gender) >1 |length(remaining[ k_group ==i &survey_year ==z ]$gender)>1 | length(remaining[ k_group ==i &survey_year ==u]$gender) >1 | length(remaining[ k_group ==i &survey_year ==v]$gender) >1 
+            |length(remaining[ k_group ==i &survey_year ==x ]$education)>1 | length(remaining[ k_group ==i &survey_year ==y]$education) >1 |length(remaining[ k_group ==i &survey_year ==z ]$education)>1 | length(remaining[ k_group ==i &survey_year ==u]$education) >1 | length(remaining[ k_group ==i &survey_year ==v]$education) >1
+            ){ remaining[k_group ==i, k_age_acc:= FALSE][k_group ==i, k_gender_acc:= FALSE][k_group ==i, k_education_acc:= FALSE] }
+     else{
+  remaining[k_group ==i, k_age_acc:= ifelse( (remaining[ k_group ==i &survey_year ==u ]$birthyear  - remaining[ k_group ==i &survey_year ==z]$birthyear) %in% c(-2:3) & (remaining[ k_group ==i &survey_year ==z ]$birthyear  - remaining[ k_group ==i &survey_year ==y]$birthyear) %in% c(-2:3) & (remaining[ k_group ==i &survey_year ==y ]$birthyear  - remaining[ k_group ==i &survey_year ==x]$birthyear) %in% c(-2:3) & (remaining[ k_group ==i &survey_year ==x ]$birthyear  - remaining[ k_group ==i &survey_year ==v]$birthyear) %in% c(-2:3)
+                                             , TRUE, FALSE)]
+  remaining[k_group ==i, k_gender_acc := ifelse(remaining[ k_group ==i &survey_year ==z ]$gender  != remaining[ k_group ==i &survey_year ==u]$gender | remaining[ k_group ==i &survey_year ==z ]$gender != remaining[ k_group ==i &survey_year ==y]$gender | remaining[ k_group ==i &survey_year ==y ]$gender  != remaining[ k_group ==i &survey_year ==x ]$gender| remaining[ k_group ==i &survey_year ==x ]$gender  != remaining[ k_group ==i &survey_year ==v ]$gender
+                                                , FALSE, TRUE) ]
+  remaining[k_group ==i, k_education_acc :=  ifelse ( abs(remaining[ k_group ==i &survey_year ==u ]$education  - remaining[ k_group ==i &survey_year ==z]$education) >5|abs(remaining[ k_group ==i &survey_year ==z ]$education  - remaining[ k_group ==i &survey_year ==y]$education) >5 | abs(remaining[ k_group ==i &survey_year ==y ]$education  - remaining[ k_group ==i &survey_year ==x]$education) >5 | abs(remaining[ k_group ==i &survey_year ==x ]$education  - remaining[ k_group ==i &survey_year ==v]$education) >5
+                                                , FALSE, TRUE)]
+     }}}
+
 detect_4<- function(x,y,z,u,data,ID){
   for (i in unique(data$ID)){
-  if(length(data[ ID ==i &survey_year ==x ]$birthyear)==0 | length(data[ ID ==i &survey_year ==y]$birthyear) ==0 |length(data[ ID ==i &survey_year ==z ]$birthyear)==0 | length(data[ ID ==i &survey_year ==u]$birthyear) ==0 |length(data[ ID ==i &survey_year ==x ]$gender)==0 | length(data[ ID ==i &survey_year ==y]$gender) ==0 |length(data[ ID ==i &survey_year ==z ]$gender)==0 | length(data[ ID ==i &survey_year ==u]$gender) ==0 |length(data[ ID ==i &survey_year ==x ]$education)==0 | length(data[ ID ==i &survey_year ==y]$education) ==0 |length(data[ ID ==i &survey_year ==z ]$education)==0 | length(data[ ID ==i &survey_year ==u]$education) ==0){next}
+  if(length(data[ ID ==i &survey_year ==x ]$birthyear)==0 | length(data[ ID ==i &survey_year ==y]$birthyear) ==0 |length(data[ ID ==i &survey_year ==z ]$birthyear)==0 | length(data[ ID ==i &survey_year ==u]$birthyear) ==0 
+     
+     |length(data[ ID ==i &survey_year ==x ]$gender)==0 | length(data[ ID ==i &survey_year ==y]$gender) ==0 |length(data[ ID ==i &survey_year ==z ]$gender)==0 | length(data[ ID ==i &survey_year ==u]$gender) ==0 
+     
+     |length(data[ ID ==i &survey_year ==x ]$education)==0 | length(data[ ID ==i &survey_year ==y]$education) ==0 |length(data[ ID ==i &survey_year ==z ]$education)==0 | length(data[ ID ==i &survey_year ==u]$education) ==0){next}
   
    else if(length(data[ ID ==i &survey_year ==x ]$birthyear)>1 | length(data[ ID ==i &survey_year ==y]$birthyear) >1 |length(data[ ID ==i &survey_year ==z ]$birthyear)>1 | length(data[ ID ==i &survey_year ==u]$birthyear) >1 |length(data[ ID ==i &survey_year ==x ]$gender)>1 | length(data[ ID ==i &survey_year ==y]$gender) >1 |length(data[ ID ==i &survey_year ==z ]$gender)>1 | length(data[ ID ==i &survey_year ==u]$gender) >1 |length(data[ ID ==i &survey_year ==x ]$education)>1 | length(data[ ID ==i &survey_year ==y]$education) >1 |length(data[ ID ==i &survey_year ==z ]$education)>1 | length(data[ ID ==i &survey_year ==u]$education) >1){ data[ID ==i, age_acc:= FALSE][ID ==i, gender_acc:= FALSE][ID ==i, education_acc:= FALSE] }
      else{
@@ -236,12 +287,29 @@ for (x in unique(remaining$k_group)){
 
 
 
-detect<- function(x,y,z,u,data =data ,ID ="ID"){
+detect<- function(x,y,z,u,v,data =data ,ID ="ID"){
+  detect_5(x,y,z,u,v,data,ID)
+  
   detect_4(x,y,z,u,data,ID)
+  detect_4(x,y,z,v,data,ID)
+  detect_4(x,y,u,v,data,ID)
+  detect_4(x,z,u,v,data,ID)
+  detect_4(y,z,u,v,data,ID)
+  
   detect_3(x,y,z,data,ID)
-  detect_3(y,z,u,data,ID)
   detect_3(x,y,u,data,ID)
-  for (i in c(x,y,z,u)){
+  detect_3(x,y,v,data,ID)
+  detect_3(x,z,u,data,ID)
+  detect_3(x,z,v,data,ID)
+  detect_3(x,u,v,data,ID)
+  
+  detect_3(y,z,u,data,ID)
+  detect_3(y,z,v,data,ID)
+  detect_3(y,u,v,data,ID)
+  detect_3(z,u,v,data,ID)
+  
+  
+  for (i in c(x,y,z,u,v)){
     for (j in c(x,y,z,u)){
       if (i==j){next}
       else if (i<j)
@@ -252,19 +320,39 @@ detect<- function(x,y,z,u,data =data ,ID ="ID"){
 }
 
 
-re_detect<- function(x,y,z,u){
+re_detect<- function(x,y,z,u,v){
   remaining[, k_age_acc :=NA][, k_education_acc :=NA][, k_gender_acc :=NA]
+  re_detect_5(x,y,z,u,v)
+  
   re_detect_4(x,y,z,u)
+  re_detect_4(x,y,z,v)
+  re_detect_4(x,y,u,v)
+  re_detect_4(x,z,u,v)
+  re_detect_4(y,z,u,v)
+  
   re_detect_3(x,y,z)
-  re_detect_3(y,z,u)
   re_detect_3(x,y,u)
-  re_detect_2(x,y)
-  re_detect_2(x,z)
-  re_detect_2(x,u)
-  re_detect_2(y,z)
-  re_detect_2(y,u)
-  re_detect_2(z,u)
+  re_detect_3(x,y,v)
+  re_detect_3(x,z,u)
+  re_detect_3(x,z,v)
+  re_detect_3(x,u,v)
+
+  re_detect_3(y,z,u)
+  re_detect_3(y,z,v)
+  re_detect_3(y,u,v)
+  re_detect_3(z,u,v)
+  
+  
+  for (i in c(x,y,z,u,v)){
+    for (j in c(x,y,z,u)){
+      if (i==j){next}
+      else if (i<j)
+        re_detect_2(i,j)
+      else if (i>j){next}
+    }
+  } 
 }
+
 
 #################################
 
@@ -409,7 +497,7 @@ spouses<- percise[, c("qser_no","survey_year", "ID","k_group", "problem","relati
 data<- test[relationship %in% c(5:19)]
 original <- copy(data)
 
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 # problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -429,7 +517,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 # rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
@@ -447,7 +535,7 @@ data <- test[relationship %in% c(20:29)]
 
 
 original <- copy(data)
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -466,7 +554,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 # rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
@@ -484,7 +572,7 @@ same_gen<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relations
 data <- test[relationship %in% c(30:34)]
 
 original <- copy(data)
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 # problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -503,7 +591,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
@@ -517,7 +605,7 @@ son_1<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship
 
 data <- test[relationship %in% c(35:39)]
 original <- copy(data)
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 # problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -537,7 +625,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
