@@ -117,8 +117,9 @@ class(fam$adl_who_help)
 ```{r}
 # matching 
 fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/fam_v6.csv") # added spouse and iadl and children
+# fam<- read.csv("/home/b05302154/fam_v6.csv") 
 fam<- as.data.table(fam)
-fam[, "ID":= paste0(qtype, ser_no, "_", relationship)]
+fam[, "ID":= paste0(qtype, ser_no, "_", relationship)][, "qser_no":= paste0(qtype, ser_no)]
 fam[,c("member_id","ID_i"):=NULL]
 
 
@@ -891,11 +892,11 @@ fam_re<- rbind(youngs, fam_re)
 fam_re[, edu:= ifelse( edu %in% c(17:19), 17, edu)][, edu:= ifelse(edu == 92, 91, edu)][, edu:= ifelse(edu == 88, NA, edu)][, education:=NULL]
 table(fam_re$edu)
 
-table(fam_re$marstat)
+ 
 fam_re[ ,marstat:= ifelse(marstat %in% c(0,7,98,99), NA, marstat)][, marstat:= ifelse( marstat ==88 & age ==29, NA, marstat)] # 88 remain 不適用 discuss with Kuan
 
 table(fam_re$children) # 88-> 沒有結婚
-fam_re[, children := ifelse( children %in% c(98, 99), NA, children)]
+fam_re[, children := ifelse( children %in% c(98, 99), NA, children)][, children := ifelse( survey_year ==1993 & children ==8 & age<18, 88, children)][, children := ifelse( survey_year ==1993 & children ==8 & marstat ==6, 88, children)]
 
 
 table(fam_re$livstat)
@@ -912,15 +913,126 @@ table(fam_re$tele)
 fam_re[, tele := ifelse( tele %in% c(9, 98, 99), NA, tele)]
 
 
+d<- copy(fam_re)
+d[, marstat:= ifelse(marstat== 88, NA, marstat)][, children := ifelse(children ==88, NA, children)]
+
 ```
+
+
 ```{r}
-write.table(fam_re, file = "family_member_0914_all_spouse.csv", sep = ",") 
+write.table(fam_re, file = "family_member_0918.csv", sep = ",") 
+write.table(d, file = "family_member_NA.csv", sep = ",") 
+
+```
+
+```{r}
+# View(fam_re[age ==0])
+# 
+# 
+table(fam$age)
+hist(fam[age<111]$age)
+hist(fam_re$age)
+# 
+table(fam_re[age<20]$age)
+
+table(fam_re[age ==0]$relationship)
+table(fam_re[age ==1]$relationship)
+table(fam_re[age ==2]$relationship)
+table(fam_re[age ==3]$relationship)
+table(fam_re[age ==4]$relationship)
+table(fam_re[age ==5]$relationship)
+table(fam_re[age ==6]$relationship)
+
+# 
+# table(fam_re[age==1 & relationship == 51]$survey_year)
+# 
+# View(fam_re[age==1 & relationship == 51])
+# 
+# View(fam_re[qser_no == "B1954"])
+# 
+# View(fam[qser_no == "B1954"])
+# 
+# View(fam_re[ age ==1 ])
+# fam_re<- as.data.table(fam_re)
+# 
+# check <- fam_re[ qser_no == "A1549" & relationship ==51]
+
+
+```
+
+```{r}
+
+fam_origin <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/fam_v6.csv") )# original 
+fam_na<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_NA.csv")# from server
+fam_re <- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_0918.csv") # from server
+main_subject <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_0820.csv"))
+# 
+# for ( i in colnames(fam_na)){
+#   x<-sum(is.na(fam_na[, i]))
+#   print(paste0(i, " : ", x," NAs"))
+# 
+# }
+
+```
+
+
+```{r}
+# super NANANA
+fam_na<- as.data.table(fam_na)
+
+fam_na[, edu:= ifelse(edu %in% c(91), 12, edu)][, edu := ifelse( edu == 90, 0, edu)]
+fam_na[, marstat := ifelse(marstat ==9, NA, marstat)]
+fam_na[, meet := ifelse(meet ==97, NA, meet)][, tele := ifelse( tele == 97, NA, tele)]
+
+fam_super_na <- copy(fam_na)
+fam_super_na$iadl_who_help <- as.numeric(fam_super_na$iadl_who_help)
+fam_super_na[, iadl_who_help := ifelse( iadl_who_help %in% c(88, 99), NA, iadl_who_help)]
+fam_super_na[, adl_who_help := ifelse( adl_who_help %in% c(88, 99), NA, adl_who_help)]
+fam_super_na[, work := ifelse( work %in% c(0,9,88,98,99), NA, work)]
 
 
 ```
 
 
 
+```{r}
+# age == 98
+
+
+fam_super_na[, qser_no_relation:= paste0(qser_no,"_",relationship)]
+fam_super_na[ qser_no_relation == "B3379_34" & survey_year == 1993, age:= fam_super_na[qser_no_relation == "B3379_34" & survey_year == 1996]$age-3 ]
+
+fam_super_na[, birthyear := ifelse( survey_year ==1996, 85 - age, birthyear)]
+fam_super_na[, birthyear := ifelse( survey_year ==1999, 88 - age, birthyear)]
+fam_super_na[, birthyear := ifelse( survey_year ==2003, 92 - age, birthyear)]
+fam_super_na[, birthyear := ifelse( survey_year ==2007, 96 - age, birthyear)]
+
+fam_super_na[, age_missing := ifelse(age %in% c(98,99) & relationship %in% c(30:98), 1, 0)]
+fam_super_na[, birthyear := ifelse( age %in% c(98,99) & relationship %in% c(30:98), NA, birthyear)]
+
+
+for (i in unique(fam_super_na[is.na(birthyear)]$qser_no_relation)){
+  fam_super_na[ qser_no_relation == i, birthyear := max(c(fam_super_na[ qser_no_relation == i]$birthyear, -999), na.rm = TRUE)]
+}
+
+
+fam_super_na[relationship %in% c(30:95), age:= ifelse(age %in%c(98,99),  survey_year -1911 - birthyear, age)]
+fam_super_na[, age:= ifelse( age >999, NA, age)][, birthyear := ifelse( birthyear < -990, NA, birthyear)]
+fam_super_na[ age ==-2, age:=0]
+
+table(fam_super_na$age)
+table(fam_super_na$birthyear)
+
+hist(fam_super_na$age)
+hist(fam_super_na$birthyear)
+hist(fam_origin[ fam_origin$age <120]$age)
+hist(fam_super_na$age)
+
+
+write.csv(fam_super_na, "family_member_0923(NA).csv")
+
+
+````
 <!-- ```{r} -->
 
 
@@ -939,6 +1051,113 @@ write.table(fam_re, file = "family_member_0914_all_spouse.csv", sep = ",")
 
 
 <!-- ``` -->
+
+
+
+<!-- #  -->
+<!-- # for ( i in problematic_qser_no_relation){ -->
+<!-- #   if (fam_super_na[ qser_no_relation == i & survey_year ==1996]$age ==98  -->
+<!-- #       & length(fam_super_na[ qser_no_relation == i & survey_year ==1996]$age)!=0 -->
+<!-- #       & length(fam_super_na[ qser_no_relation ==i & survey_year == 1993]$age)!= 0){ -->
+<!-- #     fam_super_na[ qser_no_relation == i & survey_year ==1996,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1993]$age +3] -->
+<!-- #   } -->
+<!-- #   else if (fam_super_na[ qser_no_relation == i & survey_year ==1996]$age ==98  -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==1996,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age -3] -->
+<!-- #   } -->
+<!-- #    else if (fam_super_na[ qser_no_relation == i & survey_year ==1996]$age ==98  -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==1996,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age -7] -->
+<!-- #    } -->
+<!-- #    else if (fam_super_na[ qser_no_relation == i & survey_year ==1996]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==1996,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age -11] -->
+<!-- #   } -->
+<!-- #    -->
+<!-- #   else if (fam_super_na[ qser_no_relation == i & survey_year ==1999]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1993]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==1999,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1993]$age +6] -->
+<!-- #   } -->
+<!-- #    else if (fam_super_na[ qser_no_relation == i & survey_year ==1999]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==1999,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age +3] -->
+<!-- #   } -->
+<!-- #    else if (fam_super_na[ qser_no_relation == i & survey_year ==1999]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==1999,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age -4] -->
+<!-- #    } -->
+<!-- #    -->
+<!-- #     else if (fam_super_na[ qser_no_relation == i & survey_year ==1999]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==1999,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age -8] -->
+<!-- #     } -->
+<!-- #       else if (fam_super_na[ qser_no_relation == i & survey_year ==2003]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1993]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==2003,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1993]$age +10] -->
+<!-- #       } -->
+<!-- #    -->
+<!-- #         else if (fam_super_na[ qser_no_relation == i & survey_year ==2003]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==2003,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age +7] -->
+<!-- #         } -->
+<!-- #       else if (fam_super_na[ qser_no_relation == i & survey_year ==2003]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==2003,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age +4] -->
+<!-- #       } -->
+<!-- #         else if (fam_super_na[ qser_no_relation == i & survey_year ==2003]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==2003,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age -4] -->
+<!-- #         } -->
+<!-- #         else if (fam_super_na[ qser_no_relation == i & survey_year ==2007]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1993]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==2007,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1993]$age +14] -->
+<!-- #       } -->
+<!-- #    -->
+<!-- #         else if (fam_super_na[ qser_no_relation == i & survey_year ==2007]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==2007,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1996]$age +11] -->
+<!-- #         } -->
+<!-- #       else if (fam_super_na[ qser_no_relation == i & survey_year ==2007]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==2007,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 1999]$age +8] -->
+<!-- #       } -->
+<!-- #         else if (fam_super_na[ qser_no_relation == i & survey_year ==2007]$age ==98 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2007]$age)!= 0 -->
+<!-- #            & length(fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age)!= 0){ -->
+<!-- #      fam_super_na[ qser_no_relation == i & survey_year ==2007,  -->
+<!-- #                   age:= fam_super_na[ qser_no_relation ==i & survey_year == 2003]$age +4] -->
+<!-- #         } -->
+<!-- # } -->
+
 
 
 
