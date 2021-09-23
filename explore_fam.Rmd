@@ -3,6 +3,8 @@ title: "Explore_family members"
 author: "Hsiao"
 date: "8/8/2021"
 output: html_document
+refine: 09/09/2021
+update: 
 ---
 
 ```{r}
@@ -23,7 +25,8 @@ library('Hmisc')
 ```{r}
 
 subject<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_0820.csv")
-fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_0820_all_spouse.csv")
+fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_0909_all_spouse.csv")
+
 full_fam <- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/fam_v5.csv")
 
 full_fam<- as.data.table(full_fam)
@@ -31,10 +34,17 @@ full_fam[, qser_no := paste0(qtype, ser_no)]
 subject<- as.data.table(subject)
 fam<- as.data.table(fam)
 fam[, ser_no := ifelse(is.na(qser_no), ser_no, str_sub(qser_no,2) )][, qtype:= ifelse(is.na(qser_no), qtype, str_sub(qser_no,1,1))][, qser_no := ifelse(is.na(qser_no), paste0(qtype, ser_no), qser_no)]
-subject<- subject[subject$survey_year != "1993"]
 
 
+fam[, birthyear:= ifelse( survey_year == 1993, 1993 - 1911 - age,
+                  ifelse( survey_year == 1996, 1996 - 1911 - age,
+                  ifelse( survey_year == 1999, 1999 - 1911 - age,
+                  ifelse( survey_year == 2003, 2003 - 1911 - age,
+                  ifelse( survey_year == 2007, 2007 - 1911 - age, 
+                          99999)))))]
+# check out  the age == 98 and age == 99
 
+View(fam[birthyear == -10])
 ```
 
 

@@ -384,9 +384,12 @@ prepare_kmeans<- function(x, problem_data){
 
 
 distinct<-function(x){
-  if (c(98,99) %in% unique(data[qser_no ==x]$age)){
+    if (c(98,99) %in% unique(data[qser_no ==x]$age)){
     length(unique(data[qser_no ==x]$distinct_3))
   }
+  # if (c(98,99) %in% unique(data[qser_no ==x]$age)){
+  #   length(unique(data[qser_no ==x]$distinct_3))
+  # }
   else if (88 %in% unique(data[qser_no ==x]$education)){
     length(unique(data[qser_no ==x, ]$distinct_2))
   }
@@ -478,7 +481,7 @@ one2one<- function(mydat, col1, col2) {
 data<- test[relationship %in% c(2:4)]
 original <- copy(data)
 
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0][, k_group := NA] #精準的資料
 # spouses 只取最精準的
@@ -486,6 +489,12 @@ spouses_full<- percise
 
 spouses<- percise[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
+
+# 少的28人是什麼 -> 有問題的那些人
+s<- data[qser_no %in% problems]
+
+s_age <- s[age_acc == FALSE] # 這些有可能是新娶的，所以就ignore
+s_gender <- s[gender_acc == FALSE] # 問冠銘
 
 
 ```
@@ -527,6 +536,7 @@ try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 elders_all <- try
 elders<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
+
 ```
 
 ```{r}
@@ -559,6 +569,7 @@ re_detect(1993,1996,1999,2003,2007) # is a mess的人
 # rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
 # origin : 324, rescue_1 10, rescue_2 6, total 276/ 324
+# nach 1993, 363, 345, 10, 17
 
 try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 same_gen_all<- try
@@ -602,6 +613,7 @@ son_1_all <-try
 son_1<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 # origin :36376,  percise : 32283 rescue_1 : 432 rescue_2: 1212 total 33956/36376
+# nach 1993, 43756, 39505  
 
 data <- test[relationship %in% c(35:39)]
 original <- copy(data)
@@ -635,6 +647,7 @@ try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 son_2_all <-try
 son_2<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
+
 ```
 
 
@@ -646,7 +659,7 @@ data <- test[relationship %in% c(40:44)]
 
 
 original <- copy(data)
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 # problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -666,7 +679,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 # rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
@@ -675,6 +688,7 @@ try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 daughters_1<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 # origin 33914, percise 28461, rescue_1 642, rescue_2 1143, total 30352/33914
 
+# nach 1993, 42908, 36813, 
 
 ```
 
@@ -684,7 +698,7 @@ daughters_1<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relati
 data <- test[relationship %in% c(45:49)]
 
 original <- copy(data)
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 # problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -704,7 +718,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 # rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
@@ -717,6 +731,7 @@ daughters_2<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relati
 # origin : 1644筆, percise 728, rescue_1 95, rescue_2 332, total 1155/1644
 # origin: 2434, 1247, 168, 391, total : 1806/ 2434
 
+# nach 1993, 3142, 2203 # 提升很多
 
 ```
 
@@ -728,7 +743,7 @@ daughters_2<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relati
 data <- test[relationship %in% c(50:62)]
 
 original <- copy(data)
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 # problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -748,7 +763,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 # rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
@@ -760,7 +775,9 @@ next_gen<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relations
 
 # original 13937, percise : 4566, rescue_1 :131, rescue_2 : 1860, total 6557/ 13937
 
+# nach 1993, 24689, 19432 
 
+#!!! 
 
 ```
 
@@ -769,7 +786,7 @@ next_gen<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relations
 data <- test[relationship %in% c(91:96)]
 
 original <- copy(data)
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 # problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -789,7 +806,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 # rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
@@ -800,7 +817,7 @@ daughters_in_law_all <-try
 daughters_in_law<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 # origin : 7277, percise 6699, rescue_1 271, rescue_2 77 , total 7074/ 7277 
-
+# nach 1993, 7412/ 7190
 ```
 
 
@@ -809,7 +826,7 @@ daughters_in_law<- try[, c("qser_no","survey_year", "ID","k_group", "problem","r
 data <- test[relationship %in% c(70:83, 97)]
 
 original <- copy(data)
-detect(1996,1999,2003,2007, data, "ID")
+detect(1993,1996,1999,2003,2007, data, "ID")
 # problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
 problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
 percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
@@ -829,7 +846,7 @@ solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
 rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
 
 remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1996,1999,2003,2007) # is a mess的人
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
 
 # rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
 rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
@@ -839,7 +856,7 @@ try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
 others<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
 
 # origin : 533, percise : 458, rescue_1 :25, rescue_2 : 8, total : 491/ 533
-
+# after 1993 added : 685/ 647/ 12/ 5
 ```
 
 
@@ -852,9 +869,78 @@ fam_re <- rbind(full_spouses, elders,same_gen, son_1, son_2, daughters_1, daught
 fam_re[, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(2:4), paste0(fam_re$k_group, "spouses"), NA)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(5:19), paste0(fam_re$k_group, "elders"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(20:29), paste0(fam_re$k_group, "same_generation"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(30:34), paste0(fam_re$k_group, "sons_1"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(35:39), paste0(fam_re$k_group, "sons_2"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(40:44), paste0(fam_re$k_group, "daughter_1"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(45:49), paste0(fam_re$k_group, "daughters_2"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(50:62), paste0(fam_re$k_group, "grand_sons"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(91:96), paste0(fam_re$k_group, "dauhters_in_law"), fam_re$kk_group)][, kk_group:= ifelse( !is.na(fam_re$k_group) & fam_re$relationship %in% c(70:83, 97), paste0(fam_re$k_group, "others"), fam_re$kk_group)]
 
 
-write.table(fam_re, file = "family_member_0820_all_spouse.csv", sep = ",") 
-
-
 
 
 ```
+
+```{r}
+# final adjust 
+
+table(fam_re$gender)
+fam_re[, gender:= ifelse( gender %in% c(1:2), gender, NA)]
+
+
+##############################
+youngs<- fam[edu ==88 & age<7][, qser_no := paste0(qtype, ser_no)][, c("qtype", "ser_no"):= NULL]
+j<-setdiff(colnames(fam_re), colnames(youngs))
+youngs[, c("birthyear","education","k_group","problem","kk_group"):=NA]
+#############################
+
+
+fam_re<- rbind(youngs, fam_re)
+fam_re[, edu:= ifelse( edu %in% c(17:19), 17, edu)][, edu:= ifelse(edu == 92, 91, edu)][, edu:= ifelse(edu == 88, NA, edu)][, education:=NULL]
+table(fam_re$edu)
+
+table(fam_re$marstat)
+fam_re[ ,marstat:= ifelse(marstat %in% c(0,7,98,99), NA, marstat)][, marstat:= ifelse( marstat ==88 & age ==29, NA, marstat)] # 88 remain 不適用 discuss with Kuan
+
+table(fam_re$children) # 88-> 沒有結婚
+fam_re[, children := ifelse( children %in% c(98, 99), NA, children)]
+
+
+table(fam_re$livstat)
+fam_re[, livstat := ifelse(livstat ==7, 5, livstat)][, livstat:= ifelse( livstat %in% c(8,9), NA, livstat)]
+
+
+table(fam_re$livwhere)
+fam_re[, livwhere := ifelse( livwhere %in% c(7,9,98), NA, livwhere)]
+
+table(fam_re$meet)
+fam_re[, meet := ifelse( meet %in% c(9, 98, 99), NA, meet)]
+
+table(fam_re$tele)
+fam_re[, tele := ifelse( tele %in% c(9, 98, 99), NA, tele)]
+
+
+```
+```{r}
+write.table(fam_re, file = "family_member_0914_all_spouse.csv", sep = ",") 
+
+
+```
+
+
+
+<!-- ```{r} -->
+
+
+<!-- q1<- copy(fam) -->
+<!-- q2<- copy(fam_re) -->
+
+<!-- q1[, qser_no := paste0(qtype, ser_no)][, c("ser_no", "qtype"):= NULL] -->
+<!-- q2[, c("birthyear", "education", "k_group", "problem", "kk_group"):= NULL] -->
+
+
+<!-- table(fam_re$survey_year) -->
+<!-- table(fam_re$gender) -->
+<!-- table(fam_re$age) -->
+<!-- table(fam_re$edu) -->
+<!-- table(fam_re$marstat) -->
+
+
+<!-- ``` -->
+
+
+
+
+
