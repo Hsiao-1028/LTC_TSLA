@@ -883,7 +883,7 @@ fam_re[, gender:= ifelse( gender %in% c(1:2), gender, NA)]
 
 ##############################
 youngs<- fam[edu ==88 & age<7][, qser_no := paste0(qtype, ser_no)][, c("qtype", "ser_no"):= NULL]
-j<-setdiff(colnames(fam_re), colnames(youngs))
+# j<-setdiff(colnames(fam_re), colnames(youngs))
 youngs[, c("birthyear","education","k_group","problem","kk_group"):=NA]
 #############################
 

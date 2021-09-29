@@ -525,6 +525,8 @@ dt_99[, c('i.rsex', 'i.reduc', 'i.ethnicty'):=NULL]
 # work_96<- work_96[ qser_no %in% dt_99$qser_no, c("qser_no", "worktype")]
 # 
 
+dt_99[, qser_no := paste0(qtype, ser_no)]
+
 
 ```
 
