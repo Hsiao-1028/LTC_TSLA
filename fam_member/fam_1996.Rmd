@@ -319,7 +319,9 @@ dt_96_y[, "0_edu":=  dt_96_y$f02a14]
 dt_96_y[, "0_work":=  as.numeric(as.character(dt_96_y$f02a16))]
 dt_96_y[, "0_work":=  ifelse(dt_96_y$"0_work" ==2 & dt_96_y$f02a16a == 1, 4, dt_96_y$"0_work" ) ]
 dt_96_y[, "0_work":=  ifelse(dt_96_y$"0_work" ==2, 5,dt_96_y$"0_work" ) ]
-dt_96_y[, "0_marstat":= ifelse( as.numeric (dt_96_y$f02a10) == 1, 1, NA) ] # 只取同住伴侶 ，同住非伴侶的關係只有4個，就先略了
+dt_96_y[, "0_marstat":= ifelse( as.numeric (dt_96_y$f02a10) == 1, 1, NA) ] # 只取同住伴侶
+dt_96_y[, "0_marstat":= ifelse( as.numeric (dt_96_y$f02a10) == 4, 2, dt_96_y$"0_marstat") ] # 非同住伴侶
+
 dt_96_y[, "0_children":= dt_96_y$f04b1 ] 
 dt_96_y[, "0_livstat":= ifelse( as.numeric (dt_96_y$f02a10a) == 1, 0, NA ) ]
 dt_96_y[, "0_livstat":= ifelse( as.numeric(dt_96_y$f02a10a)== 0, 1, dt_96_y$"0_livstat" ) ]
@@ -509,7 +511,23 @@ s[, main_giver := ifelse( relationship == adl_who_help, 1, 0)]
 sss<- s[main_giver ==1]
 ```
 
+```{r}
+# # check on spouses 
+# 
+# fam_96[, qser_no := paste0(qtype, ser_no)]
+# 
+# demo_96_o<- as.data.table(demo_dt_96_o)
+# demo_dt_96_o[, qser_no := paste0(qtype, ser_no)]
+# 
+# 
+# demo_96_y<- as.data.table(demo_dt_96_y)
+# demo_dt_96_y[, qser_no := paste0(qtype, ser_no)]
+# 
+# unmarried<- demo_dt_96_o[marstat !=1]$qser_no
+# 
+# table(fam_96[ qser_no %in% unmarried & relationship ==2]$work)
 
+```
 
 
 

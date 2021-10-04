@@ -12,12 +12,45 @@ library(ggplot2)
 library(fixest)
 library(ggfortify)
 library(stargazer)
+library(stringr)
 ```
 
 
 ```{r}
 subject.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_0820.csv"))
-fmlymmb.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_0923(NA).csv"))
+fmlymmb.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_1004.csv"))
+
+```
+
+```{r}
+# final check
+
+View(fmlymmb.dt[ qser_no == "B785"])
+```
+
+```{r}
+# what happened on augmented spouses
+# Chou miscoded. She used the qser_no for all subjects over multiple observed years
+# After change of the code, 405 problematic remains, while 326 of them is NAs, therefore can be omited.
+# NA are mainnly other relationship in 1996 which should be omitted earlier
+# the 79 remaining is mainly consisted of 同居老伴 ( 1993, 1996 old 沒有問同居)
+# 
+# spou<- fmlymmb.dt[relationship ==2 & ObsPartnerY ==0]
+# sum(is.na(spou$marstat)) # 326
+# spou<- spou[! is.na(marstat)]
+# who <- fmlymmb.dt[ ObsPartnerY ==0 & relationship ==2 & is.na(marstat)]
+# table(who)
+```
+
+```{r}
+# duplicated people
+# main change :
+# detected_1 added to detect if one fam member only exist in specific year, is he the only one ? 
+# otherwise he will go through k_grouping.
+# unif stands for the unificated code
+
+# test<- copy(fmlymmb.dt)
+# sum(duplicated(test$unif))
 ```
 
 # Family Member Personalities
@@ -39,9 +72,14 @@ fmlymmb.dt$fmNeedIADL = ifelse(! is.na(fmlymmb.dt$iadl_who_help) , 1, 0)
 ```
 
 ```{r}
-non_married.obs <- subject.dt[marstat == 0]$qser_no
-fmlymmb.dt.nmar <- fmlymmb.dt[qser_no %in% non_married.obs]
-fmlymmb.dt$ObsPartnerY <- ifelse(fmlymmb.dt$qser_no %in% non_married.obs, 0, 1)
+subject.dt[, y_qser_no := paste0( survey_year, qser_no)]
+fmlymmb.dt[, y_qser_no := paste0(survey_year, qser_no)]
+
+non_married.obs <- subject.dt[marstat == 0]$y_qser_no
+fmlymmb.dt.nmar <- fmlymmb.dt[y_qser_no %in% non_married.obs]
+fmlymmb.dt$ObsPartnerY <- ifelse(fmlymmb.dt$y_qser_no %in% non_married.obs, 0, 1)
+
+# fmlymmb.dt<- fmlymmb.dt[! (ObsPartnerY ==0 & relationship ==2 & is.na(marstat))]
 ```
 
 ### Merging with Subject Data
@@ -54,12 +92,6 @@ fmlymmb.dt <- merge(fmlymmb.dt,
                     by = c("qser_no", "survey_year"))
 ```
 
-### Spouses' Problem
-```{r}
-# 妻子的製造過程： 全部都做2，再用關係（不是夫妻）去刪掉妻子，所以這些多出來的妻子蠻有可能是沒刪掉的妻子
-fmlymmb.dt<- fmlymmb.dt[! (fmlymmb.dt$relationship ==2 & fmlymmb.dt$ObsPartnerY == 0)]
-
-```
 
 ### Summary
 ```{r}
@@ -244,7 +276,7 @@ autoplot(simple.pca, data = data.pca, colour = 'primaryADL', alpha=0.1, loadings
 #### Clean Those with Partners
 ```{r}
 fmlymmb.dt.nmar <- fmlymmb.dt[ObsPartnerY == 0]
-odd.obs <- unique(fmlymmb.dt.nmar[relationship==2]$qser_no)
+odd.obs <- unique(fmlymmb.dt.nmar[relationship==2]$qser_no) # 同居但沒結婚 72 
 fmlymmb.dt.nmar <- fmlymmb.dt.nmar[!(fmlymmb.dt.nmar$qser_no %in% odd.obs)]
 ```
 

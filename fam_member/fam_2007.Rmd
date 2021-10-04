@@ -325,3 +325,20 @@ sum(is.na(dt_07$`0_age`)) # BAC in 2007
 ```
 
 
+```{r}
+
+fam_07[, qser_no := paste0(qtype, ser_no)]
+
+demo_07<- as.data.table(demo_dt_07)
+demo_dt_07[, qser_no := paste0(qtype, ser_no)]
+
+unmarried<- demo_dt_07[marstat !=1]$qser_no
+
+table(fam_07[ qser_no %in% unmarried & relationship ==2]$work)
+s<- fam_07[ qser_no %in% unmarried & relationship ==2]$qser_no
+
+table(demo_dt_07[qser_no %in% s]$marstat)
+
+# 全部都是同居老伴
+```
+

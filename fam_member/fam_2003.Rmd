@@ -449,6 +449,29 @@ dt_03<- as.data.table(rbind(dt_03o, dt_03y, fill=TRUE))
 ```
 
 
+```{r}
+# check on spouses
+
+# fam_03[, qser_no := paste0(qtype, ser_no)]
+# 
+# demo_03o<- as.data.table(demo_dt_03o)
+# demo_dt_03o[, qser_no := paste0(qtype, ser_no)]
+# 
+# demo_03y<- as.data.table(demo_dt_03y)
+# demo_dt_03y[, qser_no := paste0(qtype, ser_no)]
+# 
+# unmarried<- demo_dt_03y[marstat !=1]$qser_no
+# 
+# table(fam_03[ qser_no %in% unmarried & relationship ==2]$work)
+# s<- fam_03[ qser_no %in% unmarried & relationship ==2]$qser_no
+# 
+# table(demo_dt_03y[qser_no %in% s]$marstat)
+# 
+# # 全部都是同居老伴
+
+
+```
+
 <!-- # 下面是遺跡 -->
 
 <!-- ```{r} -->
