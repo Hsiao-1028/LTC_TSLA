@@ -1233,6 +1233,7 @@ fam_super_na[, adl_who_help := ifelse( adl_who_help %in% c(88, 99), NA, adl_who_
 fam_super_na[, work := ifelse( work %in% c(0,9,88,98,99), NA, work)]
 
 
+fam_super_na<- as.data.table(fam_super_na)
 ```
 
 
@@ -1268,9 +1269,78 @@ fam_super_na<- fam_super_na[ !( relationship ==2 & is.na(marstat))]
 fam_super_na[, qser_no_told_relation := qser_no_relation]
 fam_super_na[, c("kk_y_group", "ID","X","qser_no_relation"):= NULL]
 
-write.csv(fam_super_na, "family_member_1004.csv")
+# write.csv(fam_super_na, "family_member_1004.csv")
 
-````
+```
+
+
+```{r}
+# check 
+
+fam_super_na<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_1005.csv")
+subject<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_0820.csv")
+
+
+
+# Easiler to read 
+setnames(fam_super_na, "gender","male")
+fam_super_na$male <- ifelse(fam_super_na$male ==1,1,0)
+
+fam_super_na<- as.data.table(fam_super_na)
+subject<- as.data.table(subject)
+
+subject[, y_qser_no := paste(survey_year, qser_no, sep ="_")]
+fam_super_na[, y_qser_no := paste(survey_year, qser_no, sep ="_")]
+
+# nursing_house_id<- subject[dwell1 ==2]$y_qser_no
+# fam_super_na <- fam_super_na[ , subject_in_nursing_house := ifelse(y_qser_no %in% nursing_house_id , 1, 0)]
+# main_subject_residency <- subject[ ,c("y_qser_no", "crt1")]
+# fam_super_na<- main_subject_residency[ fam_super_na, on = "y_qser_no"][, X:=NULL]
+# setnames(fam_super_na, "crt1", "subject_residency")
+
+fam_super_na[, having_child := ifelse(fam_super_na$children >0, 1, 0)]
+setnames(fam_super_na, "children", "number_of_children")
+
+
+# relationship
+fam_super_na[, is.spouse:= ifelse( relationship %in% c(2,4), 1,0)]
+fam_super_na[, is.elder := ifelse( relationship %in% c(5:19), 1,0)]
+fam_super_na[, is.same_generation := ifelse( relationship %in% c(20:29), 1,0)]
+fam_super_na[, is.son := ifelse( relationship %in% c(30:39), 1,0)]
+fam_super_na[, is.daughter := ifelse( relationship %in% c(40:49), 1,0)]
+fam_super_na[, is.grandson := ifelse( relationship %in% c(50:62), 1,0)]
+fam_super_na[, is.daughter_in_law := ifelse( relationship %in% c(91:96), 1,0)]
+fam_super_na[, is.other := ifelse( relationship %in% c(70:83, 97), 1,0)]
+
+fam_super_na[, unif:= substr(unif, 6, nchar(unif))]
+
+fam_super_na[problem ==2 & relationship %in% c(30:34), unif:= paste(qser_no, "son", sub(".*_", "", k_group), sep = "_")]
+fam_super_na[problem ==2 & relationship %in% c(30:34), j := sub(".*_", "", k_group)]
+invisible(for (i in unique(fam_super_na$qser_no)){
+fam_super_na[ qser_no == i, sons:= max(j, na.rm = TRUE)]})
+fam_super_na[problem ==2 & relationship %in% c(35:39), unif:= ifelse( is.na(sons), paste(qser_no, "son", 4+ as.numeric(sub(".*_", "", k_group)), sep = "_"), paste(qser_no, "son", as.numeric(sub(".*_", "", k_group)) + as.numeric(sons), sep = "_"))]
+
+fam_super_na[problem ==2 & relationship %in% c(40:44), unif:= paste(qser_no, "daughter", sub(".*_", "", k_group), sep = "_")]
+fam_super_na[problem ==2 & relationship %in% c(40:44), j := sub(".*_", "", k_group)]
+invisible(for (i in unique(fam_super_na$qser_no)){
+fam_super_na[problem ==2 & qser_no == i, sons:= max(j, na.rm = TRUE)]})
+fam_super_na[problem ==2 & relationship %in% c(45:49), unif:= ifelse( is.na(sons), paste(qser_no, "daughter", 4+ as.numeric(sub(".*_", "", k_group)), sep = "_"), paste(qser_no, "daughter", as.numeric(sub(".*_", "", k_group)) + as.numeric(sons), sep = "_"))]
+
+fam_super_na[youngs ==1 & relationship %in% c(30:49), unif := paste(unif, "young", sep = "_")][,c("sons", "j") := NULL]
+
+# fam_super_na[, check:= paste0(survey_year, unif)]
+setnames(fam_super_na, c("relationship","having_child"),c("told_relation","have_child"))
+fam_super_na[, c("qser_no_told_relation","kk_group","qser_no","X"):=NULL]
+
+setcolorder(fam_super_na, c("unif","problem", "survey_year","told_relation", "male", "age", "birthyear", "edu","work", "marstat","have_child","number_of_children" ,"livstat","livwhere","meet","tele","y_qser_no","adl_who_help","iadl_who_help","subject_residency","subject_in_nursing_house","is.spouse","is.elder","is.same_generation","is.son","is.daughter","is.grandson","is.daughter_in_law","is.other","k_group","youngs","age_missing"))
+
+colnames(fam_super_na)
+# write.csv(fam_super_na, "family_member_1010.csv")
+# write.csv(subject, "main_subject_1010.csv")
+
+
+```
+
 <!-- ```{r} -->
 
 

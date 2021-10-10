@@ -116,7 +116,6 @@ s<- s[qser_no %in% survive]
 
 dt_93<- s[dt_93, on= "qser_no"]
 
-
 dt_93[, "0_relation":= 2,]
 dt_93[, "0_gender":=  ifelse(dt_93$'89_sex' == 1, 2 , 1 )][, '0_gender':= ifelse(dt_93$a1cores ==1, dt_93$'0_gender', 8)]# 非同居者先給8
 
