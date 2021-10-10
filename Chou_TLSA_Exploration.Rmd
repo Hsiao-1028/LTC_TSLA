@@ -19,8 +19,8 @@ library(stringr)
 
 
 ```{r}
-subject.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_0820.csv"))
-fmlymmb.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_1005.csv"))
+subject.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_1010.csv"))
+fmlymmb.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_1010.csv"))
 
 ```
 
@@ -53,17 +53,17 @@ fmlymmb.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC
 
 ### Preprocess
 ```{r}
-fmlymmb.dt$gender = ifelse(fmlymmb.dt$gender == 1, 1, 0)  # gender 0 = females
-fmlymmb.dt$partner = ifelse(fmlymmb.dt$relationship == 2, 1, 0) 
+fmlymmb.dt$male = ifelse(fmlymmb.dt$male == 1, 1, 0)  # male 0 = females
+fmlymmb.dt$partner = ifelse(fmlymmb.dt$told_relation == 2, 1, 0) 
 fmlymmb.dt$working = ifelse(fmlymmb.dt$work == 1, 1, 0)
 fmlymmb.dt$unmarried = ifelse(fmlymmb.dt$marstat == 6, 1, 0) 
 fmlymmb.dt$attend_at_least_uni = ifelse(fmlymmb.dt$edu >= 13, 1, 0) 
 fmlymmb.dt$attend_at_least_high_school = ifelse(fmlymmb.dt$edu >=10, 1, 0) 
 # age above 15 & unmarry -> 6, if under 15 -> NA
 fmlymmb.dt$livTogether = ifelse(fmlymmb.dt$livstat == 0, 1, 0)
-fmlymmb.dt$primaryADL = ifelse(fmlymmb.dt$adl_who_help == fmlymmb.dt$relationship, 1, 0)
+fmlymmb.dt$primaryADL = ifelse(fmlymmb.dt$adl_who_help == fmlymmb.dt$told_relation, 1, 0)
 fmlymmb.dt$primaryIADL = ifelse(fmlymmb.dt$iadl_who_help == 
-                                  fmlymmb.dt$relationship, 1, 0)
+                                  fmlymmb.dt$told_relation, 1, 0)
 fmlymmb.dt$fmNeedADL = ifelse(! is.na(fmlymmb.dt$adl_who_help) , 1, 0)
 fmlymmb.dt$fmNeedIADL = ifelse(! is.na(fmlymmb.dt$iadl_who_help) , 1, 0)
 fmlymmb.dt$subject_residency = as.character(fmlymmb.dt$subject_residency)
@@ -71,8 +71,8 @@ fmlymmb.dt$subject_residency = as.character(fmlymmb.dt$subject_residency)
 ```
 
 ```{r}
-subject.dt[, y_qser_no := paste0( survey_year, qser_no)]
-fmlymmb.dt[, y_qser_no := paste0(survey_year, qser_no)]
+# subject.dt[, y_qser_no := paste0( survey_year, qser_no)]
+# fmlymmb.dt[, y_qser_no := paste0(survey_year, qser_no)]
 
 non_married.obs <- subject.dt[marstat == 0]$y_qser_no
 fmlymmb.dt.nmar <- fmlymmb.dt[y_qser_no %in% non_married.obs]
@@ -105,11 +105,11 @@ print(paste("Number of Primary Caregiver:", nrow(fm.primary.c)))
 print(paste("People in families without need:", nrow(fm.whot.need)))
 ```
 
-#### Age, Gender, Education, Marriage Status
+#### Age, male, Education, Marriage Status
 ```{r}
 rbind(fm.with.need[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -119,7 +119,7 @@ rbind(fm.with.need[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE),
                       )],
       fm.with.need[ObsPartnerY == 0,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -129,7 +129,7 @@ rbind(fm.with.need[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE),
                       )],
       fm.whot.need[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -139,7 +139,7 @@ rbind(fm.with.need[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE),
                       )],
       fm.whot.need[ObsPartnerY == 0,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -149,7 +149,7 @@ rbind(fm.with.need[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE),
                       )],
       fm.primary.c[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -159,7 +159,7 @@ rbind(fm.with.need[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE),
                       )],
       fm.primary.c[ObsPartnerY == 0,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -172,17 +172,17 @@ rbind(fm.with.need[ObsPartnerY == 1,.(AGE = mean(age, na.rm = TRUE),
 ### Regression
 #### Families with need
 ```{r}
-fm.with.need$SubSameSex <- ifelse(fm.with.need$gender == fm.with.need$rsex, 1, 0)
-need.reg1 <- feols(primaryADL ~ gender| survey_year, fm.with.need)
-need.reg2 <- feols(primaryADL ~ gender + age + age**2 | survey_year, fm.with.need)
-need.reg3 <- feols(primaryADL ~ gender + age + age**2 + edu | survey_year, fm.with.need)
-need.reg4 <- feols(primaryADL ~ gender + age + age**2 + edu + working | survey_year, fm.with.need)
-need.reg5 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried | survey_year, fm.with.need)
-need.reg6 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex | survey_year, fm.with.need)
-need.reg7 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex + partner | survey_year, fm.with.need)
-need.reg8 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex + partner + livTogether | survey_year, fm.with.need)
-need.reg9 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex + partner + livTogether + subject_in_nursing_house | survey_year, fm.with.need)
-need.reg10 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex + partner + livTogether  | survey_year, fm.with.need[ subject_in_nursing_house ==0])
+fm.with.need$SubSameSex <- ifelse(fm.with.need$male == fm.with.need$rsex, 1, 0)
+need.reg1 <- feols(primaryADL ~ male| survey_year, fm.with.need)
+need.reg2 <- feols(primaryADL ~ male + age + age**2 | survey_year, fm.with.need)
+need.reg3 <- feols(primaryADL ~ male + age + age**2 + edu | survey_year, fm.with.need)
+need.reg4 <- feols(primaryADL ~ male + age + age**2 + edu + working | survey_year, fm.with.need)
+need.reg5 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried | survey_year, fm.with.need)
+need.reg6 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex | survey_year, fm.with.need)
+need.reg7 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex + partner | survey_year, fm.with.need)
+need.reg8 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex + partner + livTogether | survey_year, fm.with.need)
+need.reg9 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex + partner + livTogether + subject_in_nursing_house | survey_year, fm.with.need)
+need.reg10 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex + partner + livTogether  | survey_year, fm.with.need[ subject_in_nursing_house ==0])
 etable(need.reg1, need.reg2, need.reg3, need.reg4, need.reg5, need.reg6, need.reg7, need.reg7, need.reg8, need.reg10)
 
 
@@ -195,7 +195,7 @@ library(rpart.plot)
 ```
 
 ```{r}
-simple.tree <- rpart(primaryADL ~ gender + age + age**2 + 
+simple.tree <- rpart(primaryADL ~ male + age + age**2 + 
                        edu + partner + working + SubSameSex + 
                        unmarried + livTogether, data = fm.with.need, cp=.008)
 rpart.plot(simple.tree, faclen=0, 
@@ -206,7 +206,7 @@ rpart.plot(simple.tree, faclen=0,
 ```
 
 ```{r}
-simple.tree <- rpart(primaryADL ~ gender + age + age**2 + 
+simple.tree <- rpart(primaryADL ~ male + age + age**2 + 
                        edu + partner + working + SubSameSex + 
                        unmarried, data = fm.with.need, cp=.003)
 rpart.plot(simple.tree, faclen=0, 
@@ -217,7 +217,7 @@ rpart.plot(simple.tree, faclen=0,
 ```
 
 ```{r}
-simple.tree <- rpart(primaryADL ~ gender + age + age**2 + 
+simple.tree <- rpart(primaryADL ~ male + age + age**2 + 
                        edu + working + SubSameSex + 
                        unmarried, data = fm.with.need, cp=.003)
 rpart.plot(simple.tree, faclen=0, 
@@ -230,7 +230,7 @@ rpart.plot(simple.tree, faclen=0,
 ```{r}
 # which spouse would be the main giver
 ## omitted some very important variables : partner income, partner health status
-simple.tree <- rpart(primaryADL ~ gender + age + age**2 + 
+simple.tree <- rpart(primaryADL ~ male + age + age**2 + 
                        edu + working + SubSameSex + 
                        unmarried, data = fm.with.need[ partner ==1 ], cp=.003)
 rpart.plot(simple.tree, faclen=0, 
@@ -242,7 +242,7 @@ rpart.plot(simple.tree, faclen=0,
 
 ### PCA Clustering
 ```{r}
-data.pca <- fm.with.need[,c("gender", "age", "edu", "working", "unmarried", "SubSameSex", "partner", "primaryADL")]
+data.pca <- fm.with.need[,c("male", "age", "edu", "working", "unmarried", "SubSameSex", "partner", "primaryADL")]
 data.pca$primaryADL <- factor(data.pca$primaryADL)
 simple.pca <- prcomp(formula = ~ .,  
               data = data.pca[,1:7], 
@@ -291,12 +291,12 @@ autoplot(simple.pca, data = data.pca, colour = 'primaryADL', alpha=0.1, loadings
 #### Clean Those with Partners
 ```{r}
 fmlymmb.dt.nmar <- fmlymmb.dt[ObsPartnerY == 0]
-odd.obs <- unique(fmlymmb.dt.nmar[relationship==2]$qser_no) # 同居但沒結婚 72 
+odd.obs <- unique(fmlymmb.dt.nmar[told_relation==2]$qser_no) # 同居但沒結婚 72 
 fmlymmb.dt.nmar <- fmlymmb.dt.nmar[!(fmlymmb.dt.nmar$qser_no %in% odd.obs)]
 
-table(fmlymmb.dt.nmar$relationship)
+table(fmlymmb.dt.nmar$told_relation)
 
-# fmlymmb.dt.nmar<- fmlymmb.dt.nmar[ relationship %in% c()]
+# fmlymmb.dt.nmar<- fmlymmb.dt.nmar[ told_relation %in% c()]
 ```
 
 ```{r}
@@ -308,11 +308,11 @@ print(paste("Number of Primary Caregiver:", nrow(fm.primary.c)))
 print(paste("People in families without need:", nrow(fm.whot.need)))
 ```
 
-#### Age, Gender, Education, Marriage Status
+#### Age, male, Education, Marriage Status
 ```{r}
 rbind(fm.with.need[,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -323,7 +323,7 @@ rbind(fm.with.need[,.(AGE = mean(age, na.rm = TRUE),
                       )],
       fm.whot.need[,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -334,7 +334,7 @@ rbind(fm.with.need[,.(AGE = mean(age, na.rm = TRUE),
                       )],
       fm.primary.c[,.(AGE = mean(age, na.rm = TRUE), 
                       EDU = mean(edu, na.rm = TRUE), 
-                      SEX = mean(gender, na.rm = TRUE),
+                      SEX = mean(male, na.rm = TRUE),
                       PARTNER = mean(partner, na.rm = TRUE),
                       WORK = mean(working, na.rm = TRUE),
                       UNMARRIED = mean(unmarried, na.rm = TRUE),
@@ -348,25 +348,25 @@ rbind(fm.with.need[,.(AGE = mean(age, na.rm = TRUE),
 ### Regression
 #### Family with Need (Observations Not Having Partners)
 ```{r}
-fm.with.need$SubSameSex <- ifelse(fm.with.need$gender == fm.with.need$rsex, 1, 0)
-need.reg1 <- feols(primaryADL ~ gender| survey_year, fm.with.need)
-need.reg2 <- feols(primaryADL ~ gender + age + age**2 | survey_year, fm.with.need)
-need.reg3 <- feols(primaryADL ~ gender + age + age**2 + edu | survey_year, fm.with.need)
-need.reg4 <- feols(primaryADL ~ gender + age + age**2 + edu + working | survey_year, fm.with.need)
-need.reg5 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried | survey_year, fm.with.need)
-need.reg6 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex | survey_year, fm.with.need)
-need.reg7 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex + livTogether | survey_year, fm.with.need)
-need.reg8 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex + livTogether | survey_year, fm.with.need)
-need.reg9 <- feols(primaryADL ~ gender + age + age**2 + edu + working + unmarried + SubSameSex + livTogether + subject_in_nursing_house + subject_residency | survey_year, fm.with.need)
-need.reg10 <- feols(primaryADL ~ gender + age + age**2 + attend_at_least_high_school + working + unmarried + SubSameSex + livTogether + subject_in_nursing_house + subject_residency | survey_year, fm.with.need)
-need.reg11 <- feols(primaryADL ~ gender + age + age**2 + attend_at_least_uni + working + unmarried + SubSameSex + livTogether + subject_in_nursing_house + subject_residency | survey_year, fm.with.need)
+fm.with.need$SubSameSex <- ifelse(fm.with.need$male == fm.with.need$rsex, 1, 0)
+need.reg1 <- feols(primaryADL ~ male| survey_year, fm.with.need)
+need.reg2 <- feols(primaryADL ~ male + age + age**2 | survey_year, fm.with.need)
+need.reg3 <- feols(primaryADL ~ male + age + age**2 + edu | survey_year, fm.with.need)
+need.reg4 <- feols(primaryADL ~ male + age + age**2 + edu + working | survey_year, fm.with.need)
+need.reg5 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried | survey_year, fm.with.need)
+need.reg6 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex | survey_year, fm.with.need)
+need.reg7 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex + livTogether | survey_year, fm.with.need)
+need.reg8 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex + livTogether | survey_year, fm.with.need)
+need.reg9 <- feols(primaryADL ~ male + age + age**2 + edu + working + unmarried + SubSameSex + livTogether + subject_in_nursing_house + subject_residency | survey_year+ subject_residency, fm.with.need)
+need.reg10 <- feols(primaryADL ~ male + age + age**2 + attend_at_least_high_school + working + unmarried + SubSameSex + livTogether + subject_in_nursing_house | survey_year+ subject_residency , fm.with.need)
+need.reg11 <- feols(primaryADL ~ male + age + age**2 + attend_at_least_uni + working + unmarried + SubSameSex + livTogether + subject_in_nursing_house  | survey_year +subject_residency, fm.with.need)
 
 etable(need.reg1, need.reg2, need.reg3, need.reg4, need.reg5, need.reg6, need.reg7, need.reg8, need.reg9, need.reg10, need.reg11)
 ```
 
 ### Decision Tree
 ```{r}
-simple.tree <- rpart(primaryADL ~ gender + age + age**2 + 
+simple.tree <- rpart(primaryADL ~ male + age + age**2 + 
                        edu + working + 
                        unmarried + livTogether, data = fm.with.need, cp=.008)
 ```
@@ -380,7 +380,7 @@ rpart.plot(simple.tree, faclen=0,
 ```
 
 ```{r}
-simple.tree <- rpart(primaryADL ~ gender + age + age**2 + 
+simple.tree <- rpart(primaryADL ~ male + age + age**2 + 
                        edu + working + SubSameSex + 
                        unmarried, data = fm.with.need, cp=.003)
 rpart.plot(simple.tree, faclen=0, 
@@ -390,7 +390,7 @@ rpart.plot(simple.tree, faclen=0,
            nn=TRUE)
 ```
 ```{r}
-simple.tree <- rpart(primaryADL ~ gender + age + age**2 + 
+simple.tree <- rpart(primaryADL ~ male + age + age**2 + 
                        attend_at_least_uni + attend_at_least_high_school + working + SubSameSex + 
                        unmarried, data = fm.with.need, cp=.003)
 rpart.plot(simple.tree, faclen=0, 
@@ -405,7 +405,7 @@ rpart.plot(simple.tree, faclen=0,
 
 ### PCA
 ```{r}
-data.pca <- fm.with.need[,c("gender", "age", "edu", "working", 
+data.pca <- fm.with.need[,c("male", "age", "edu", "working", 
                             "unmarried", "SubSameSex", "primaryADL")]
 data.pca$primaryADL <- factor(data.pca$primaryADL)
 simple.pca <- prcomp(formula = ~ .,  

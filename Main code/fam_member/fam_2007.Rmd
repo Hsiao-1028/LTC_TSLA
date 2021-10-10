@@ -1,0 +1,344 @@
+---
+title: "fam_2007"
+author: "Hsiao"
+date: "6/30/2021"
+output: html_document
+refine: "2021/09/07"
+update: spouses' age(B)
+---
+
+
+```{r}
+# packages 
+library("data.table") 
+library("magrittr")
+library("naniar")
+library("plyr")
+library("dplyr")
+library("stringr")
+library("ggplot2")
+library("tidyr")
+library("tibble")
+```
+
+```{r}
+library(data.table)
+# load("/Users/hsiao/Desktop/Projects/HRS_Chao/data_merge.RData")
+
+```
+
+
+```{r}
+# 2007
+# includes type A,B,C
+
+dt_07 <- data.table(df_c_07)
+dt_07 <- dt_07[, "survey_year":=2007]
+# dt_03y <- dt_03y[,"rwstat":= NA]
+# dt_03y <- dt_03y[,"worktype":= NA]
+dt_07 <- dt_07[,"reduc":= NA]
+dt_07 <- dt_07[,"ethnicty":= NA]
+dt_07 <- dt_07[,c("crt1","crt2"):= NA]
+#dt_03y <- dt_03y[,c("othpres"):= NA]
+
+
+sort(table(dt_07$c3_1))
+sort(table(dt_07$c3c_1))
+# missing value of current disease is because he did not have the histroy
+
+demo_07<-c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr2","cvr5","reduc","ethnicty","a1_1","b1_5","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36")
+
+# b15 -- ntothh ( omit partners and children), I encode b22 to includ all members living in this house
+# c12c 從住院主因變成了最近一次住院是為什麼
+# c26 cursomke ** 以前沒有的但我覺得蠻重要 99 96好像也有 可以考慮放
+# c29 cursport ** 可考慮要不要放
+# 有身高體重
+
+which(colnames(dt_07) =="crt1")
+demo_dt_07 <- dt_07[,c("qtype","ser_no","survey_year","cvr1","c65","c66","crt1","crt2","cvr4","cvr5","reduc","ethnicty","a1_1","b1_5","b22","c1","e1_2","e6","c18b","c18c","c33","c34","c35","c36"),]
+#ntothh exclude parners and childrens
+# e6 is the work type
+# 有身高體重了
+# e6 工作類型 e6a（沒放進去） 是行業分類
+
+demo_07<- c("qtype","ser_no","survey_year","rsex","height","weight","crt1","crt2","dwell1","dwell2","reduc","ethnicty","marstat","nchldrn","ntothh","hlgenrat","rwstat","worktype","nomihosp","hosphp1","cursmoke","curdrink","curchew","frqsport")
+demo_dt_07<- setNames(demo_dt_07, demo_07)
+demo_dt_07[, dwell1 := ifelse( dwell1 !=8, 2, 1)]
+#demo_dt_99 <- add_column(demo_dt_99,rage = NA , .after = "rsex" )
+#-------------
+
+#adls
+
+
+phy_dt_07 <- dt_07[,c("c14_2","c14_3","c14_4","c14_5","c14_6","c14_7","c14_9"),]
+
+
+which(colnames(dt_07) =="c15_6")
+# phys like 站立15分鐘, 屈蹲, 雙手高舉到頭上, 扭轉東西, 拿重物, 跑步, 走兩三樓
+phys_07 <- c("stand_15","crouch","hands_on_head","twist","carry_heavy","run","staris")
+iadl_dt_07 <- dt_07[,663:668, ]
+iadl_dt_07 <- add_column(iadl_dt_07,dt_07$c14_8, .after = "c15_3" )
+iadl_07 <- c("grocery","financial","transport","walk200","heavywork","housework","telehphone")
+
+
+adls_dt_07 <- dt_07[,c("c17_1","c17_2","c17_3","c17_4","c17_5","c17_6")]
+adls_07 <- c("bath","clothes","dine","wakeup","walk_indoor","WC")
+# general of ADLS is missing
+
+names<- append(phys_07,adls_07)
+names <- append(names,iadl_07)
+adls_dt_07 <- cbind(phy_dt_07, adls_dt_07, iadl_dt_07)
+adls_dt_07<- setNames(adls_dt_07, names)
+adls_dt_07[, iadl_who_help := ifelse( dt_07$c16b ==0, 0, dt_07$c16c)][, adl_who_help := dt_07$c17e]
+
+
+#----------
+# diseases 
+
+dis_dt_07 <- dt_07[,c("c3c_1","c3c_2","c3c_3","c3b_4","c3c_5","c3c_6","c3c_7","c3c_8","c3c_9","c3_10","c3c_11","c3c_12","c3c_13","c3c_14","c3c_15","c3c_16","c3c_17","c3c_18"),]
+dis_07 <- c("hibp","diab","hrtpr","strok","cancer","broh","arth","ulcer","livpr","hipbone","catar","kiddi","gout","spur","osteo","hibc","anem","prost")
+dis_dt_07<- setNames(dis_dt_07, dis_07)
+
+
+```
+
+
+
+
+```{r}
+# fam 
+# original 6, 16,17, 30 appear in code book but not data -> I omit them (not yet done) ???? 
+
+
+# 來抓伴侶！
+dt_03<- as.data.table( rbind(dt_03o, dt_03y, fill=TRUE))
+
+dt_96[,"qser_no":= paste0(qtype, ser_no)]
+dt_99[,"qser_no":= paste0(dt_99$qtype, dt_99$ser_no)]
+dt_03[,"qser_no" := paste0(dt_03$qtype, dt_03$ser_no)]
+dt_07[,"qser_no":= paste0(dt_07$qtype, dt_07$ser_no)]
+survive <- intersect(dt_03$qser_no, dt_07$qser_no)
+
+missing<- dt_07$qser_no[! dt_07$qser_no %in% survive]  
+missing_96<- intersect(missing, dt_96$qser_no)
+missing_89 <- missing[! missing %in% missing_96]
+missing_89 <- intersect(missing_89, dt_89$qser_no)
+
+
+
+ss<- dt_03[qser_no %in% survive, c("qser_no","0_age", "0_edu")]
+s_96 <- dt_96[qser_no %in% missing_96, c("qser_no","0_age", "0_edu")]
+s_89 <- dt_89[qser_no %in% missing_89, c("qser_no", "spyrbir", "speduc","rocspbir")]
+
+setnames(s_89, c("qser_no", "spyrbir", "speduc","rocspbir"), c("qser_no", "old_age", "old_edu", "roc"))
+s_89[, old_age := ifelse(roc ==2, s_89$`old_age`, ifelse(roc==0, 78- s_89$`old_age`, 78+ s_89$`old_age` ) )][, c("roc") :=NULL]
+s_89[, old_age := as.numeric(as.character(old_age)) +14 ] # age補到03年
+
+setnames(s_96, c("qser_no", "0_age", "0_edu"), c("qser_no", "old_age", "old_edu"))
+s_96[, old_age := as.numeric(as.character(old_age)) +7 ] # age補到03年
+setnames(ss, c("qser_no", "0_age", "0_edu"), c("qser_no", "old_age", "old_edu"))
+
+ss<- as.data.table(rbind(ss, rbind(s_89, s_96)))
+setnames(ss, c("qser_no", "old_age", "old_edu"), c("qser_no", "03age", "03edu"))
+
+dt_07<- ss[dt_07, on="qser_no"]
+
+
+
+
+
+# 0_ 為伴侶資料
+dt_07[, "0_relation":= 2,]
+dt_07[, "0_gender":=  ifelse(dt_07$cvr1 == 1, 2 , 1 )]
+dt_07[, "0_gender":=  ifelse(dt_07$a1_2 %in% c(3,4,5,6,8,9), 8 , dt_07$"0_gender" )]
+dt_07[, "0_age":= dt_07$"03age"+4][, "0_age":= ifelse( dt_07$`0_age` >150, NA, dt_07$`0_age`)]
+dt_07[, "0_edu":= dt_07$"03edu"]
+dt_07[, "0_work":= as.character(dt_07$e20)]
+dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(1,2), 1,dt_07$"0_work" ) ]
+dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(3), 7, dt_07$"0_work" ) ]
+dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(4,6), 333,dt_07$"0_work" ) ]
+dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(5), 4,dt_07$"0_work" ) ]
+dt_07[, "0_work":=  ifelse(dt_07$"0_work" %in% c(333), 5,dt_07$"0_work" ) ]
+
+dt_07[, "0_marstat":= 1]
+dt_07[, "0_children":= as.numeric(as.character(b1_5))]
+dt_07[, "0_livstat":= 0][a1a =="1", "0_livstat":= ifelse(a2a =="1", 0, 1)]
+dt_07[, "0_livwhere":= 0]
+dt_07[, "0_meet":= 0][a1a =="1", "0_meet":= as.numeric(as.character(a2c))]
+dt_07[, "0_tele":= 0]
+
+# 更新結婚仔
+dt_07[a1a == "4", "0_gender":=  ifelse(dt_07[a1a =="4"]$cvr1 == 1, 2 , 1 )]
+dt_07[a1a == "4", "0_age":=  as.numeric(as.character(a7_3))]
+dt_07[a1a == "4", "0_edu":=  as.numeric(as.character(a9))]
+
+
+# 同住子女
+for(i in 1:6){setnames(dt_07, paste0( "b5_", i), paste0(i ,"_relation"))}
+for(i in 1:6){setnames(dt_07, paste0( "b6_", i), paste0(i ,"_gender"))}
+for(i in 1:6){setnames(dt_07, paste0( "b7_", i), paste0(i ,"_age"))}
+for(i in 1:6){setnames(dt_07, paste0( "b8_", i), paste0(i ,"_edu"))}
+for(i in 1:6){setnames(dt_07, paste0( "b9_", i), paste0(i ,"_work"))}
+for(i in 1:6){setnames(dt_07, paste0( "b10_", i), paste0(i ,"_marstat"))}
+for(i in 1:6){setnames(dt_07, paste0( "b10a_", i), paste0(i ,"_children"))}
+dt_07[, paste0(1:6, "_livstat"):= 0, ] #0 = 住在一起
+dt_07[, paste0(1:6, "_livwhere"):= 0, ] #0 = 住在一起
+dt_07[, paste0(1:6, "_meet"):= 0, ] #0 = 住在一起
+dt_07[, paste0(1:6, "_tele"):= 0, ] #0 = 住在一起
+
+
+# 不同住子女
+for(i in 11:21){setnames(dt_07, paste0( "b5_", i), paste0(i-4 ,"_relation"))}
+for(i in 11:21){setnames(dt_07, paste0( "b6_", i), paste0(i-4 ,"_gender"))}
+for(i in 11:21){setnames(dt_07, paste0( "b7_", i), paste0(i-4 ,"_age"))}
+for(i in 11:21){setnames(dt_07, paste0( "b8_", i), paste0(i-4 ,"_edu"))}
+for(i in 11:21){setnames(dt_07, paste0( "b9_", i), paste0(i-4 ,"_work"))}
+for(i in 11:21){setnames(dt_07, paste0( "b10_", i), paste0(i-4 ,"_marstat"))}
+for(i in 11:21){setnames(dt_07, paste0( "b10a_", i), paste0(i-4 ,"_children"))}
+for(i in 11:21){setnames(dt_07, paste0( "b11_", i), paste0(i-4 ,"_livstat"))}
+for(i in 11:21){setnames(dt_07, paste0( "b12_", i), paste0(i-4 ,"_livwhere"))}
+for(i in 11:21){setnames(dt_07, paste0( "b13_", i), paste0(i-4 ,"_meet"))}
+for(i in 11:21){setnames(dt_07, paste0( "b14_", i), paste0(i-4 ,"_tele"))}
+
+#抓到配偶了！ no18
+# 配偶抓不太下來，資料零碎不齊
+# dt_07[, "18_relation":= 配偶]
+# dt_07[, "18_gender":= ifelse(cvr1==1, 2, 1)] #這裡用opposite gender of 被訪問者，可能會漏掉同性家庭
+# setnames(dt_07, c("a2b","a2c"), paste0(18,c("_age","_edu","_work","_marstat","_livstat","_livwhere","_meet","_tele")))
+
+
+# 同住他人
+# no13後的他人 都是NA
+for(i in 1:9){setnames(dt_07, paste0( "b16_", i), paste0(i+17 ,"_relation"))}
+for(i in 1:9){setnames(dt_07, paste0( "b17_", i), paste0(i+17 ,"_gender"))}
+for(i in 1:9){setnames(dt_07, paste0( "b18_", i), paste0(i+17 ,"_age"))}
+for(i in 1:9){setnames(dt_07, paste0( "b19_", i), paste0(i+17 ,"_edu"))}
+for(i in 1:9){setnames(dt_07, paste0( "b20_", i), paste0(i+17 ,"_work"))}
+for(i in 1:9){setnames(dt_07, paste0( "b21_", i), paste0(i+17 ,"_marstat"))}
+
+for(i in 10:17){setnames(dt_07, paste0( "b16_", i), paste0(i+17 ,"_relation"))}
+for(i in 10:17){setnames(dt_07, paste0( "b17_", i), paste0(i+17 ,"_gender"))}
+for(i in 10:17){setnames(dt_07, paste0( "b18_", i), paste0(i+17 ,"_age"))}
+for(i in 10:17){setnames(dt_07, paste0( "b19_", i), paste0(i+17 ,"_edu"))}
+for(i in 10:17){setnames(dt_07, paste0( "b20_", i), paste0(i+17 ,"_work"))}
+for(i in 10:17){setnames(dt_07, paste0( "b21_", i), paste0(i+17 ,"_marstat"))}
+dt_07[, paste0(18:34, "_children"):= 99, ] #0 = 住在一起
+dt_07[, paste0(18:34, "_livstat"):= 0, ] #0 = 住在一起
+dt_07[, paste0(18:34, "_livwhere"):= 0, ] #0 = 住在一起
+dt_07[, paste0(18:34, "_meet"):= 0, ] #0 = 住在一起
+dt_07[, paste0(18:34, "_tele"):= 0, ] #0 = 住在一起
+
+
+
+cols<- c(unlist( lapply(paste0("^", 0:34,"_"), function(x){grep(x, names(dt_07), value = T)})))
+class(cols)
+fam_07<- dt_07[, cols, with=FALSE ]
+
+
+dt_07 <- cbind(demo_dt_07, adls_dt_07, dis_dt_07, fam_07)
+dt_07[,qser_no := paste0(qtype, ser_no)]
+
+
+d5<- read.spss("/Users/hsiao/Desktop/Projects/HRS_Chao/BKGRD/BKGRD07/DATA/comvarn_v2.sav", to.data.frame = TRUE)
+d5<- as.data.table(d5)
+names(d5)<- tolower(names(d5))
+d5<- d5[, qser_no:= paste0(qtype, ser_no)][, c('qser_no','educ07','ethc07','crt1', 'crt2','age07s')]
+
+dt_07<- d5[dt_07, on="qser_no"]
+dt_07[, reduc := ethc07][, rage:= age07s][, ethnicty := ethc07][, c('educ07', 'ethc07','age07s','age', 'i.crt1' ,'i.crt2'):=NULL][, birthyear := 2007 -1911- rage]
+
+```
+
+```{r}
+library(reshape)
+
+liv<- c("_relation","_gender","_age","_edu","_work","_marstat","_children","_livstat","_livwhere","_meet","_tele")
+
+cols<- unlist(lapply(0:30, function(x){paste0(x,liv)}))
+cols<- append(c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help'), cols)
+tt<- dt_07[, .SD, .SDcols=cols ] 
+
+x<- list( c(paste0(0:30, "_relation")), c(paste0(0:30, "_gender")), c(paste0(0:30, "_age")), c(paste0(0:30,"_edu")), c(paste0(0:30, "_work")), c(paste0(0:30, "_marstat")), c(paste0(0:30, "_children")), c(paste0(0:30, "_livstat")), c(paste0(0:30, "_livwhere")), c(paste0(0:30, "_meet")), c(paste0(0:30, "_tele")))
+
+dt_07_reshape <- reshape(tt, varying =x , direction = "long", timevar = "ID_i", idvar = c("ser_no", "survey_year", "qtype","adl_who_help", 'iadl_who_help') , v.names = c("relationship","gender","age","edu","work","marstat","children","livstat","livwhere","meet","tele"))
+
+dt_07_reshape <- as.data.table(dt_07_reshape)
+dt_07_reshape[, "member_id":= paste0(qtype, ser_no, "_", ID_i)]
+
+# NAs 是有出現在codebook上，但沒有出現在dataset裡面的資料...
+```
+
+
+```{r}
+fam_07 <- dt_07_reshape
+table(sort(fam_07$gender))
+test<- fam_07[fam_07$gender !=8]
+
+
+
+test[,relationship:= as.numeric(as.character(relationship))]
+test[,age:= as.numeric(as.character(age))]
+test[,edu:= as.numeric(as.character(edu))]
+test[,work:= as.numeric(as.character(work))]
+test[,marstat:= as.numeric(as.character(marstat))]
+test[, marstat := ifelse( marstat== 88, 8, marstat)]
+test[,children:= as.numeric(as.character(children))]
+test[, children := ifelse( marstat %in% c(6,8), 88, children)]
+test[,livstat:= as.numeric(as.character(livstat))]
+test[,livwhere:= as.numeric(as.character(livwhere))]
+test[, meet:= as.numeric(as.character(meet))]
+test[,tele:= as.numeric(as.character(tele))]
+
+table(sort(test$relationship))
+table(sort(test$gender))
+table(sort(fam_07$work))
+table(sort(test$work))
+table(sort(test$edu)) # 一些不適用的被分配到其他地方去了... 
+table(sort(test$marstat))
+table(sort(test$livstat))
+table(sort(test$livwhere))
+table(sort(test$meet))
+table(sort(test$tele))
+
+table(sort(test$adl_who_help))
+
+# test[, work:= ifelse(edu %in% c(1:14), 2, work)] # 這句出錯了！
+# test[, edu:= ifelse(edu ==90 & work==88 ,88 , edu)]
+
+
+table(sort(test$children))
+fam_07<-test
+
+```
+
+
+
+```{r}
+# check about the missing spouses' age
+# 還有個問題就是 89年可能把民國跟歲數encode 成同一個欄位... 頭痛
+sum(is.na(dt_96$`0_age`)) # BA in 1996
+sum(is.na(dt_99$`0_age`)) # BA in 1999
+sum(is.na(dt_03$`0_age`)) # BAC in 2003
+sum(is.na(dt_07$`0_age`)) # BAC in 2007
+
+
+```
+
+
+```{r}
+
+fam_07[, qser_no := paste0(qtype, ser_no)]
+
+demo_07<- as.data.table(demo_dt_07)
+demo_dt_07[, qser_no := paste0(qtype, ser_no)]
+
+unmarried<- demo_dt_07[marstat !=1]$qser_no
+
+table(fam_07[ qser_no %in% unmarried & relationship ==2]$work)
+s<- fam_07[ qser_no %in% unmarried & relationship ==2]$qser_no
+
+table(demo_dt_07[qser_no %in% s]$marstat)
+
+# 全部都是同居老伴
+```
+

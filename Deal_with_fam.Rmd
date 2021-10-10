@@ -99,7 +99,7 @@ x<-as.data.table(x)
 sort(table(x), decreasing = TRUE)
 
 
-write.table(fam, file = "fam_v6.csv", sep = ",") 
+write.table(fam, file = "undetected_fam_v6.csv", sep = ",") 
 # v5:include childrens
 # v6 spouses' age correction, added dt_93
 
@@ -116,7 +116,7 @@ class(fam$adl_who_help)
 
 ```{r}
 # matching 
-fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/fam_v6.csv") # added spouse and iadl and children
+fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/Main code/undetected_fam_v6.csv") # added spouse and iadl and children
 # fam<- read.csv("/home/b05302154/fam_v6.csv") 
 fam<- as.data.table(fam)
 fam[, "ID":= paste0(qtype, ser_no, "_", relationship)][, "qser_no":= paste0(qtype, ser_no)]
