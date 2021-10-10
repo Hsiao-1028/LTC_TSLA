@@ -1,6 +1,6 @@
 # LTC_TSLA
 * Refinement of the TSLA data for the Long Term Care project
-* Mit Kuan und Chou
+* Working with Kuan Ming Chen and Yu Shuan Chou
 
 
 ## About Datasets
