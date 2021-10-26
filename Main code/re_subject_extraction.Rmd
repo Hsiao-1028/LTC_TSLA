@@ -126,6 +126,7 @@ family<- family[ ,c("qser_no", "adl_who_help","iadl_who_help")]
 s<- family[!duplicated(family$qser_no)]
 dt_93<- s[ dt_93, on="qser_no"]
 
+
 ```
 
 
@@ -961,8 +962,8 @@ dt2[, brokenbone:= as.numeric( as.character(dt2$brokenbone))][, brokenbone := if
 dt2[, headspine:= as.numeric( as.character(dt2$headspine))][, headspine := ifelse( headspine %in% c(2,8), 0, headspine)]
 dt2[, prost:= as.numeric( as.character(dt2$prost))][, prost := ifelse( prost %in% c(2,8), 0, prost)]
 
-write.table(dt2, file = "main_subject_0821.csv", sep = ",") # last version 修改孩子數
-
+dt2[, y_qser_no:= paste(survey_year,qtype,ser_no, sep = "_")]
+write.table(dt2, file = "main_subject_1026.csv", sep = ",", col.names=NA)
 
 # sum(is.na(dt2$hibp))
 # table(sort(dt2$diab))
