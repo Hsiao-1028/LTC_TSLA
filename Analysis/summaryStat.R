@@ -5,6 +5,7 @@ library(xtable)
 library(rpart)
 library(rpart.plot)
 library(fixest)
+library(mlogit)
 
 subject.dt <- fread("main_subject_1010.csv")
 fmlymmb.dt <- fread("family_member_1010.csv")
@@ -101,7 +102,6 @@ subject.dt[, have_child := nchldrn > 0]
 subject.dt[, married := marstat==1]
 fmlymmb.dt[, married := marstat==1]
 
-fmlymmb.dt[,SubSameSex :=  male == rsex]
 
 # Throw incomplete information
 
@@ -116,6 +116,7 @@ fmlymmb.dt <- merge(fmlymmb.dt,
                     subject.dt, 
                     all.x = TRUE, 
                     by = c("qser_no", "survey_year"))
+fmlymmb.dt[,SubSameSex :=  male == rsex]
 
 ## Summary statistics ----
 
@@ -240,6 +241,9 @@ fmlymmb.dt[, onlyDaughter := sum(relCate == "Daughter") == 1, by = .(qser_no,sur
 fmlymmb.dt[, oldestKid := age == max(age[relCate %in% c("Son", "Daughter")],na.rm=TRUE) & relCate %in% c("Son", "Daughter") , by = .(qser_no,survey_year)]
 fmlymmb.dt[, youngestKid := age == min(age[relCate %in% c("Son", "Daughter")],na.rm=TRUE) & relCate %in% c("Son", "Daughter") , by = .(qser_no,survey_year)]
 
+
+fmlymmb.dt[, sumAllPossible := sum(relCate == "Son") + sum(relCate == "Daughter") + sum(relCate == "Daughter-In-Law"), by = .(qser_no,survey_year)]
+
   # Regression model:
 ## The gender model. 
 ## (Let me first estimate potential wage from other places for the female.)
@@ -248,5 +252,55 @@ est <- feols(primaryADL ~ male + I(age <= 65) + age + age**2 + rsex + rage + rag
         edu + partner + onlySon +onlyDaughter + oldestKid + youngestKid + SubSameSex + 
         unmarried|survey_year, data = fmlymmb.dt[nADL >0 ])
 
+
+est0 <- feols(primaryADL ~  I(relCate=="Daughter") + I(relCate == "Daughter-In-Law") +  I(age <= 65) + age + age**2 + rsex + rage + rage**2 + nADL + nIADL + 
+                edu + unmarried|survey_year, data = fmlymmb.dt[nADL >0 & relCate %in% c("Son", "Daughter","Daughter-In-Law") ])
+
+est1 <- feols(primaryADL ~  I(relCate=="Daughter") + I(relCate == "Daughter-In-Law") +  I(age <= 65) + age + age**2 + rsex + rage + rage**2 + nADL + nIADL + 
+               edu + onlySon +onlyDaughter + oldestKid + youngestKid + SubSameSex + 
+               unmarried|survey_year, data = fmlymmb.dt[nADL >0 & relCate %in% c("Son", "Daughter","Daughter-In-Law") ])
+
+est2 <- feols(primaryADL ~  I(relCate=="Daughter") + I(relCate == "Daughter-In-Law") +  
+               I(age <= 65) + age + age**2 + rsex + rage + rage**2 + nADL + nIADL + 
+               I(relCate=="Daughter")*unmarried + married.y +
+               edu + SubSameSex + 
+               unmarried|survey_year, data = fmlymmb.dt[nADL >0 & relCate %in% c("Son", "Daughter","Daughter-In-Law") ])
+est3 <- feols(primaryADL ~  I(relCate=="Daughter") + I(relCate == "Daughter-In-Law") +  
+                I(age <= 65) + age + age**2 + rsex + rage + rage**2 + nADL + nIADL + 
+                I(relCate=="Daughter")*unmarried + married.y +
+                edu + SubSameSex + 
+                unmarried + sumAllPossible|survey_year, data = fmlymmb.dt[nADL >0 & relCate %in% c("Son", "Daughter","Daughter-In-Law") ])
+cwpm <- readRDS("correctedWagePredictionModel.rds")
+fmlymmb.dt[, lnPredictedWage := cwpm["(Intercept)"] + male* cwpm["maleTRUE"]  +
+             age*cwpm["age"] + age^2 * cwpm["I(age^2)"] + edu* cwpm["eduYr"] + married.x * cwpm["marriedTRUE"] + 
+             married.x * male * cwpm["maleTRUE:marriedTRUE"]]
+
+
+est4 <- feols(primaryADL ~   I(relCate=="Daughter") + I(relCate == "Daughter-In-Law") +  
+                I(age <= 65) + age + age**2 + rsex + rage + rage**2 + nADL + nIADL + 
+                I(relCate=="Daughter")*unmarried + married.y +
+                edu + SubSameSex + 
+                unmarried + sumAllPossible+lnPredictedWage|survey_year, data = fmlymmb.dt[nADL >0 & relCate %in% c("Son", "Daughter","Daughter-In-Law") ])
+
+# Add number of daughters/sons/in-laws
+etable(est0, est1, est2, est3, est4 ,tex = TRUE)
 summary(est)
+
+# Need to use mlogit to estimate nested logit. 
+
+
+
+
+
+
 ## Look at dynamic concern and then replicate the models by Stern. 
+
+## Examine Stability -----
+setorder(subject.dt, qser_no, survey_year)
+subject.dt[, lagged_help:= shift(adl_who_help), by = qser_no]
+
+
+subject.dt[, mean(adl_who_help==lagged_help,na.rm=TRUE)]
+subject.dt[lagged_help <= 60 & adl_who_help <= 60& lagged_help != 0 & adl_who_help != 0, table(adl_who_help,lagged_help)]
+subject.dt[lagged_help <= 60 & adl_who_help <= 60& lagged_help != 0 & adl_who_help != 0, mean(adl_who_help==lagged_help,na.rm=TRUE)]
+
