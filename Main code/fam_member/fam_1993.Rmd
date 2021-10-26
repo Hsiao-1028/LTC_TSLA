@@ -537,8 +537,6 @@ fam_93[, c('n_major_giver' ,'n_major_i_giver', 'major_giver', 'major_i_giver', "
 
 # fam_93[, main_giver := ifelse( relationship == adl_who_help, 1, 0)]
 # table(fam_93[ main_giver ==1]$adl_who_help)
-
-
 # 
 # jj[, n_major_giver := ifelse(help_adl ==2, 1, 0)][, n_minor_giver := ifelse(help_adl ==1, 1, 0)]
 # jj[, n_major_giver := sum(n_major_giver), by= ser_no][, n_minor_giver := sum(n_minor_giver), by= ser_no]
@@ -556,7 +554,6 @@ fam_93[, c('n_major_giver' ,'n_major_i_giver', 'major_giver', 'major_i_giver', "
 # sum(jj[ help_adl %in% c(1,2)]$n_major_giver ==1)
 # sum(jj$n_minor_giver ==1)
 # sum(jj$n_adl_giver ==1)
-
 
 ```
 
