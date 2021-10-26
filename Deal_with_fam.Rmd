@@ -1277,8 +1277,8 @@ fam_super_na[, c("kk_y_group", "ID","X","qser_no_relation"):= NULL]
 ```{r}
 # check 
 
-fam_super_na<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_1005.csv")
-subject<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_0820.csv")
+fam_super_na<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/Archive/family_member_1005.csv")
+subject<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/Archive/main_subject_0820.csv")
 
 
 
@@ -1330,9 +1330,9 @@ fam_super_na[youngs ==1 & relationship %in% c(30:49), unif := paste(unif, "young
 
 # fam_super_na[, check:= paste0(survey_year, unif)]
 setnames(fam_super_na, c("relationship","having_child"),c("told_relation","have_child"))
-fam_super_na[, c("qser_no_told_relation","kk_group","qser_no","X"):=NULL]
+fam_super_na[, c("qser_no_told_relation","kk_group","X"):=NULL]
 
-setcolorder(fam_super_na, c("unif","problem", "survey_year","told_relation", "male", "age", "birthyear", "edu","work", "marstat","have_child","number_of_children" ,"livstat","livwhere","meet","tele","y_qser_no","adl_who_help","iadl_who_help","subject_residency","subject_in_nursing_house","is.spouse","is.elder","is.same_generation","is.son","is.daughter","is.grandson","is.daughter_in_law","is.other","k_group","youngs","age_missing"))
+setcolorder(fam_super_na, c("unif","problem", "survey_year","told_relation", "male", "age", "birthyear", "edu","work", "marstat","have_child","number_of_children" ,"livstat","livwhere","meet","tele","y_qser_no","adl_who_help","iadl_who_help","subject_residency","subject_in_nursing_house","is.spouse","is.elder","is.same_generation","is.son","is.daughter","is.grandson","is.daughter_in_law","is.other","k_group","youngs","age_missing","qser_no"))
 
 colnames(fam_super_na)
 # write.csv(fam_super_na, "family_member_1010.csv")

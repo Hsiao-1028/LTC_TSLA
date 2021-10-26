@@ -19,7 +19,7 @@ library(stringr)
 
 
 ```{r}
-subject.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_1010.csv"))
+subject.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_1026.csv"))
 fmlymmb.dt <- as.data.table(read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_1010.csv"))
 
 ```
@@ -71,8 +71,8 @@ fmlymmb.dt$subject_residency = as.character(fmlymmb.dt$subject_residency)
 ```
 
 ```{r}
-# subject.dt[, y_qser_no := paste0( survey_year, qser_no)]
-# fmlymmb.dt[, y_qser_no := paste0(survey_year, qser_no)]
+subject.dt[, y_qser_no := paste0( survey_year, qser_no)]
+fmlymmb.dt[, y_qser_no := paste0(survey_year, qser_no)]
 
 non_married.obs <- subject.dt[marstat == 0]$y_qser_no
 fmlymmb.dt.nmar <- fmlymmb.dt[y_qser_no %in% non_married.obs]

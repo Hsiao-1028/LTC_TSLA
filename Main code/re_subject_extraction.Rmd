@@ -119,6 +119,13 @@ dt_93[, i.marstat:= NULL]
 # 93年 diseases的encoding 不一樣
 # 把2都改成0 
 
+# 1993's adl_who_help : refer to fam_member/fam_1993.rmd for fam_93
+family<- copy(fam_93)
+family[, qser_no := paste0(qtype, ser_no)]
+family<- family[ ,c("qser_no", "adl_who_help","iadl_who_help")]
+s<- family[!duplicated(family$qser_no)]
+dt_93<- s[ dt_93, on="qser_no"]
+
 ```
 
 
@@ -954,7 +961,7 @@ dt2[, brokenbone:= as.numeric( as.character(dt2$brokenbone))][, brokenbone := if
 dt2[, headspine:= as.numeric( as.character(dt2$headspine))][, headspine := ifelse( headspine %in% c(2,8), 0, headspine)]
 dt2[, prost:= as.numeric( as.character(dt2$prost))][, prost := ifelse( prost %in% c(2,8), 0, prost)]
 
-write.table(dt2, file = "main_subject_0820.csv", sep = ",") # last version 修改孩子數
+write.table(dt2, file = "main_subject_0821.csv", sep = ",") # last version 修改孩子數
 
 
 # sum(is.na(dt2$hibp))
@@ -973,6 +980,7 @@ write.table(dt2, file = "main_subject_0820.csv", sep = ",") # last version 修�
 
 
 ```
+
 
 
 
