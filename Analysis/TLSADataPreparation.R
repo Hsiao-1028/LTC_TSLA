@@ -7,8 +7,8 @@ library(rpart.plot)
 library(fixest)
 library(mlogit)
 
-subject.dt <- fread("main_subject_1026.csv") 
-fmlymmb.dt <- fread("family_member_1010.csv")
+subject.dt <- fread("main_subject_1111.csv") 
+fmlymmb.dt <- fread("family_member_1111.csv")
 
 ## Define ADL -----
 subject.dt[bath==9, bath := 3]

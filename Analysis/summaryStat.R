@@ -70,6 +70,7 @@ dtPrint <- as.data.table(rbind(valueSex, valueSexFam, valueAge, valueAgeFam,
 dtPrint[,V0 := c(rep(c("Ind", "Fam"),5),"Ind","Ind","Ind","Fam","Fam","Ind","Ind","Ind","Fam","Fam")]
 dtPrint[,rn := gsub(rn,pattern = "value",replacement = "")]
 setcolorder(dtPrint,c("rn","V0","V1","V2","V3","V4"))
+setnames(dtPrint, c("Variable","Member","All","with ADL","with ADL Married","with ADL Single"))
 print(xtable(dtPrint,digits = 2),booktabs = TRUE,include.rownames = FALSE)
 
 ## Classification trees ----
@@ -77,11 +78,15 @@ print(xtable(dtPrint,digits = 2),booktabs = TRUE,include.rownames = FALSE)
 simple.tree <- rpart(primaryADL ~ male + age + age**2 + rsex + rage + rage**2 + 
                        edu + partner + SubSameSex + nADL + nIADL + 
                        unmarried , data = fmlymmb.dt[!is.na(primaryADL)], cp=.008)
+
+
+png(filename="Figures/CTreeSimple.png")
 rpart.plot(simple.tree, faclen=0, 
            box.palette="RdBu", 
            fallen.leaves=TRUE, 
            shadow.col="gray", 
-           nn=TRUE)
+           nn=TRUE) 
+dev.off()
 
 
 simple.tree <- rpart(primaryADL ~ male + age + age**2 + rsex + rage + rage**2 + 
@@ -99,11 +104,14 @@ rpart.plot(simple.tree, faclen=0,
 ## What we are really thinking of is the family level specification there. 
 simple.tree <- rpart(careArngUpperLevel ~ nADL + nIADL + rage + rsex + married, data = subject.dt)
 simple.tree <- rpart(careArngGrand ~ nADL + nIADL + rage + rsex + married, data = subject.dt[careArngUpperLevel == "ChildrenGen"])
+
+png(filename="Figures/CTreeWithinChildrenGen.png")
 rpart.plot(simple.tree, faclen=0, 
            box.palette="RdBu", 
            fallen.leaves=TRUE, 
            shadow.col="gray", 
-           nn=TRUE)
+           nn=TRUE) 
+dev.off()
 
 
 ## So should look at the tree at the family level then. But then the family specifciation is different. 
