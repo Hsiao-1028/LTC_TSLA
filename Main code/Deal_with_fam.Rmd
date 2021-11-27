@@ -58,6 +58,7 @@ library("ggplot2")
 library("tidyr")
 library("tibble")
 library("conclust")
+library("Hmisc")
 ```
 
 
@@ -99,7 +100,7 @@ x<-as.data.table(x)
 sort(table(x), decreasing = TRUE)
 
 
-write.table(fam, file = "undetected_fam_v6.csv", sep = ",") 
+write.table(fam, file = "undetected_fam_v7.csv", sep = ",") 
 # v5:include childrens
 # v6 spouses' age correction, added dt_93
 
@@ -108,7 +109,6 @@ class(fam$adl_who_help)
 # check <- read.csv("/Users/Ano/Desktop/HRS_Chao/TSLA/fam_v4.csv") # added iadl_who_help, work change 
 # adl_who_help =0 -> 沒有人幫忙
 
-
 ```
 
 
@@ -116,7 +116,7 @@ class(fam$adl_who_help)
 
 ```{r}
 # matching 
-fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/Main code/undetected_fam_v6.csv") # added spouse and iadl and children
+fam<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/Main code/undetected_fam_v7.csv") # added spouse and iadl and children
 # fam<- read.csv("/home/b05302154/fam_v6.csv") 
 fam<- as.data.table(fam)
 fam[, "ID":= paste0(qtype, ser_no, "_", relationship)][, "qser_no":= paste0(qtype, ser_no)]
@@ -144,6 +144,7 @@ table(sort(test$age))
 table(sort(test$education))
 
 ```
+
 
 
 ```{r}
@@ -480,6 +481,284 @@ one2one<- function(mydat, col1, col2) {
 
 ```
 
+
+```{r}
+# 媳婦
+detect_dil<- function(x,y,z,u,data =data ,ID ="ID"){
+ 
+  detect_4(x,y,z,u,data,ID)
+  
+  detect_3(x,y,z,data,ID)
+  detect_3(x,y,u,data,ID)
+  detect_3(x,z,u,data,ID)
+  detect_3(y,z,u,data,ID)
+  
+  
+  for (i in c(x,y,z,u)){
+    for (j in c(x,y,z)){
+      if (i==j){next}
+      else if (i<j)
+        detect_2(i,j,data,ID)
+      else if (i>j){next}
+    }
+  } 
+      
+  detect_1(x, data, ID)
+  detect_1(y, data, ID)
+  detect_1(z, data, ID)
+  detect_1(u, data, ID)
+}
+re_detect_dil<- function(x,y,z,u){
+  remaining[, k_age_acc :=NA][, k_education_acc :=NA][, k_gender_acc :=NA]
+
+  re_detect_4(x,y,z,u)
+  
+  re_detect_3(x,y,z)
+  re_detect_3(x,y,u)
+  re_detect_3(x,z,u)
+  re_detect_3(y,z,u)
+  
+  
+  for (i in c(x,y,z,u)){
+    for (j in c(x,y,z)){
+      if (i==j){next}
+      else if (i<j)
+        re_detect_2(i,j)
+      else if (i>j){next}
+    }
+  } 
+  re_detect_1(x)
+  re_detect_1(y)
+  re_detect_1(z)
+  re_detect_1(u)
+}
+
+data <- test[relationship %in% c(91:96)]
+
+original <- copy(data)
+detect_dil(1996,1999,2003,2007, data, "ID")
+
+
+# for (x in unique(data$qser_no)){
+#  if(length(data[ qser_no ==x &survey_year ==1993 ]$birthyear)>0 |length(data[ qser_no ==x &survey_year ==1993 ]$gender)>0 | length(data[ qser_no ==x &survey_year ==1993 ]$education)>0 ){ data[qser_no ==x, age_acc:= FALSE][qser_no ==x, gender_acc:= FALSE][qser_no ==x, education_acc:= FALSE] 
+#  }
+#  else{next}
+#   }
+
+# problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
+problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
+percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
+data <- data[qser_no %in% problems]
+# problem_data <- data[ qser_no %in% problems][age!=99 | education!= 88]
+
+for (i in unique(data$qser_no)){
+  prepare_kmeans(i, data)}
+
+for (i in unique(data$qser_no)){
+  get_kmeans(i, data)}
+
+s<-one2one(data[qser_no %in% problems], "ID", "k_group")
+s<- as.data.table(as.matrix(s))
+unsolve<- unique(data[ID %in% unique(s$V1)]$qser_no)
+
+solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
+rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
+rescue_1[, unif := paste0(survey_year, qser_no, relationship)]
+
+duplcaited_unif<- rescue_1[ duplicated(unif)]$qser_no
+unsolve<- append(unsolve, duplcaited_unif)
+solve_1<- setdiff( problems, unsolve) #for updating
+rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #for updating
+
+remaining<- copy(data[qser_no %in% unsolve])
+re_detect_dil(1996,1999,2003,2007) # is a mess的人
+
+# rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
+rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
+
+
+try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
+daughters_in_law_all <-try
+daughters_in_law<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
+
+# -500
+```
+
+```{r}
+# match 回1993
+
+original_grouping<- daughters_in_law_all[ qtype =="B" & survey_year != 1993]
+original_grouping[, unif := ifelse(problem ==0, paste0(survey_year, qser_no, relationship), paste0(survey_year, k_group) )]
+original_grouping[, ser_no := as.numeric(as.character(str_sub(qser_no, 2)))]
+
+jest<- original_grouping
+jest[, d_dil := ifelse(problem !=2, str_sub(ID, -1), str_sub(k_group,-1))][, n_dil := length(unique(d_dil)), by= qser_no]
+jest[, dd_dil := paste(qser_no, d_dil, sep = "_")]
+jjest<- jest[ !duplicated(jest$dd_dil)][ ,c("qser_no", "birthyear","education", "d_dil","dd_dil","n_dil","gender")]
+
+dil_1993 <- daughters_in_law_all[ qtype =="B" & survey_year ==1993 ]
+dil_1993<- dil_1993[, ser_no := as.numeric(as.character(str_sub(qser_no, 2)))]
+kest<- dil_1993
+
+
+kest[, match:=0][, unif_dil := paste0(qser_no,"_", .I)]
+#sub(" xxx.*", "", x) 
+
+for( i in unique(kest$unif_dil)){
+  for( j in unique(jjest[ qser_no == sub("_.*","", i)]$d_dil))
+    if( kest[unif_dil == i ]$match ==0){
+ kest[unif_dil ==i , match:= ifelse( abs(birthyear - jjest[ qser_no ==sub("_.*","", i) & d_dil ==j]$birthyear)<4 
+                                    & abs(gender - jjest[ qser_no ==sub("_.*","", i) & d_dil ==j]$gender)<1 
+                                    & abs(education - jjest[ qser_no ==sub("_.*","", i) & d_dil ==j]$education)<7
+                                    , 90 +as.numeric(as.character(j)),0)]
+    }
+  else{next}
+}
+
+kest[, match:= ifelse(match ==0, 96, match)]
+kest[, ID := paste(qser_no, match, sep = "_")]
+j<-kest[duplicated(kest$ID)]$qser_no # 不是之後年份沒有，就是match不到(數字有差) # 69人
+
+kest[, relationship:= match]
+table(kest$relationship) # 大概還是有一半的人沒有match上
+
+kest[qser_no %in% unique(rescue_2$qser_no) & match!=96, relationship:= 96]
+kest[qser_no %in% unique(rescue_2$qser_no) & match!=96, problem:=2][qser_no %in% unique(rescue_2$qser_no) & match==96, problem:=0]
+kest[qser_no %in% unique(rescue_2$qser_no) & match!=96, k_group:=paste0(qser_no, "_", match-90)][qser_no %in% unique(rescue_2$qser_no) & match==96, k_group:=NA]
+
+#setdiff(colnames(daughters_in_law_all),colnames(kest))
+
+kest[, c("match","unif_dil"):=NULL]
+
+data<- rbind(daughters_in_law_all[ survey_year!=1993], kest)
+
+original <- copy(data)
+
+detect(1993,1996,1999,2003,2007, data, "ID")
+# problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
+problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
+percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
+data <- data[qser_no %in% problems]
+# problem_data <- data[ qser_no %in% problems][age!=99 | education!= 88]
+
+for (i in unique(data$qser_no)){
+  prepare_kmeans(i, data)}
+
+for (i in unique(data$qser_no)){
+  get_kmeans(i, data)}
+
+s<-one2one(data[qser_no %in% problems], "ID", "k_group")
+s<- as.data.table(as.matrix(s))
+unsolve<- unique(data[ID %in% unique(s$V1)]$qser_no)
+solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
+rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
+
+remaining<- copy(data[qser_no %in% unsolve])
+re_detect(1993,1996,1999,2003,2007) # is a mess的人
+
+# rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
+rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
+
+try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
+
+
+# try[ qser_no =="B2344" , problem:=2]
+# 
+# check<- percise[qser_no =="B2344"]
+# check<- rescue_1[duplicated(rescue_1$unif)]
+# data<- rescue_1[qser_no %in% c("B4038","B2602","B3320")]
+# for (i in unique(data$qser_no)){
+#   prepare_kmeans(i, data)}
+# for (i in unique(data$qser_no)){
+#   get_kmeans(i, data)}
+# s<-one2one(data[qser_no %in% problems], "ID", "k_group")
+# s<- as.data.table(as.matrix(s))
+# unsolve<- unique(data[ID %in% unique(s$V1)]$qser_no)
+# solve_1<- setdiff( problems, unsolve) 
+# rescue_1 <- data[qser_no %in% solve_1][, problem :=1] 
+# remaining<- copy(data[qser_no %in% unsolve])
+# re_detect(1993,1996,1999,2003,2007)
+# rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
+
+
+# try <- rbind(try[ qser_no != "B4038"], rescue_2, fill = TRUE)
+dil_all <- try
+dil<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
+# dil<- dil[ !( qser_no =="B3320" & survey_year =="1996" & age ==27 )]
+
+
+dil[, unif:= ifelse(problem!=0,paste0(survey_year, k_group),paste0(survey_year, qser_no, relationship))]
+nrow(dil) == length(unique(dil$unif)) # 7132
+p<- dil[duplicated(dil$unif)]
+
+# 最後處理duplicated的問題
+p<- dil[ qser_no %in% unique(p$qser_no)]
+
+
+data<- copy(p)
+for (i in unique(data$qser_no)){
+  prepare_kmeans(i, data)}
+for (i in unique(data$qser_no)){
+  get_kmeans(i, data)}
+
+s<-one2one(data[qser_no %in% problems], "ID", "k_group")
+s<- as.data.table(as.matrix(s))
+unsolve<- unique(data[ID %in% unique(s$V1)]$qser_no)
+solve_1<- setdiff( problems, unsolve)
+rescue_1_p <- data[qser_no %in% solve_1][, problem :=1]
+remaining<- copy(data[qser_no %in% unsolve])
+re_detect(1993,1996,1999,2003,2007)
+rescue_2_p <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
+
+dil<- dil[ unif %nin% unique(p$unif)]
+
+# dil[ qser_no == "B2216", problem:=2]
+
+ #write.csv(dil, "dil.csv")
+# remaining work : match back !
+# jj<- kest[relationship==96]$qser_no
+# table(kest$relationship) #match 不到？
+# dil<- rbind(original_grouping, kest)
+# sum(daughters_in_law[survey_year ==1993]$qser_no %in% daughters_in_law[survey_year!=1993]$qser_no) # 397個之後沒有了 1042個還有出現
+
+# setdiff(colnames(data), colnames(test))
+# data[, c(setdiff(colnames(data), colnames(test))):=NULL]
+# 
+# 
+# copycc<- copy(dil)
+# 
+# percise[, unif := paste0(survey_year, qser_no, relationship)]
+# rescue_1[, unif := paste0(survey_year, k_group)]
+# rescue_2[, unif:= paste0(survey_year, k_group)]
+# 
+# nrow(percise) == length(unique(percise$unif))
+# nrow(rescue_1) == length(unique(rescue_1$unif))
+# nrow(rescue_2) == length(unique(rescue_2$unif))
+# 
+
+```
+
+
+```{r}
+# 1993年增加的1700左右，有1300是被丟掉的
+
+percise[, unif := paste0(survey_year, qser_no, relationship)]
+rescue_1[, unif := paste0(survey_year, k_group)]
+rescue_2[, unif:= paste0(survey_year, k_group)]
+
+nrow(percise) == length(unique(percise$unif))
+nrow(rescue_1) == length(unique(rescue_1$unif))
+nrow(rescue_2) == length(unique(rescue_2$unif))
+
+j<-percise[duplicated(percise$unif)]
+
+
+remaining$y_q_ser_no <- paste0(remaining$survey_year, remaining$qser_no)
+rescue_2$y_q_ser_no <- paste0(rescue_2$survey_year, rescue_2$qser_no)
+library(Hmisc)
+trash<-remaining[y_q_ser_no %nin% unique(rescue_2$y_q_ser_no)]
+
+```
 
 
 ```{r}
@@ -976,61 +1255,6 @@ sum(duplicated(youngs$unif))
 
 ```
 
-```{r}
-# 媳婦
-data <- test[relationship %in% c(91:96)]
-
-original <- copy(data)
-detect(1993,1996,1999,2003,2007, data, "ID")
-# problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE | education_acc ==FALSE]$qser_no) 
-problems <- unique(data[age_acc ==FALSE | gender_acc ==FALSE| education_acc == FALSE]$qser_no) 
-percise<- data[qser_no %in% setdiff(data$qser_no, problems)][, problem:= 0] #精準的資料
-data <- data[qser_no %in% problems]
-# problem_data <- data[ qser_no %in% problems][age!=99 | education!= 88]
-
-for (i in unique(data$qser_no)){
-  prepare_kmeans(i, data)}
-
-for (i in unique(data$qser_no)){
-  get_kmeans(i, data)}
-
-s<-one2one(data[qser_no %in% problems], "ID", "k_group")
-s<- as.data.table(as.matrix(s))
-unsolve<- unique(data[ID %in% unique(s$V1)]$qser_no)
-
-solve_1<- setdiff( problems, unsolve) # solve的人ID要調整
-rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #稍微impercise的人
-rescue_1[, unif := paste0(survey_year, qser_no, relationship)]
-
-duplcaited_unif<- rescue_1[ duplicated(unif)]$qser_no
-unsolve<- append(unsolve, duplcaited_unif)
-solve_1<- setdiff( problems, unsolve) #for updating
-rescue_1 <- data[qser_no %in% solve_1][, problem :=1] #for updating
-
-remaining<- copy(data[qser_no %in% unsolve])
-re_detect(1993,1996,1999,2003,2007) # is a mess的人
-
-# rescue_3 <- remaining[age_acc ==TRUE& education_acc ==TRUE &gender_acc ==TRUE]
-rescue_2 <- remaining[k_age_acc == TRUE & k_education_acc ==TRUE & k_gender_acc ==TRUE][ ,problem:=2]
-
-
-try <- rbind(percise, rescue_1, rescue_2, fill=TRUE)
-daughters_in_law_all <-try
-daughters_in_law<- try[, c("qser_no","survey_year", "ID","k_group", "problem","relationship","gender","age","edu","education","work","marstat","children","livstat","livwhere","meet","tele","adl_who_help", "iadl_who_help")]
-
-# origin : 7277, percise 6699, rescue_1 271, rescue_2 77 , total 7074/ 7277 
-# nach 1993, 7412/ 7190
-
-percise[, unif := paste0(survey_year, qser_no, relationship)]
-rescue_1[, unif := paste0(survey_year, k_group)]
-rescue_2[, unif:= paste0(survey_year, k_group)]
-
-nrow(percise) == length(unique(percise$unif))
-nrow(rescue_1) == length(unique(rescue_1$unif))
-nrow(rescue_2) == length(unique(rescue_2$unif))
-
-```
-
 
 ```{r}
 # Others 
@@ -1089,9 +1313,10 @@ nrow(rescue_2) == length(unique(rescue_2$unif))
 
 ```{r}
 # merge up 
+dil[, unif:= NULL]
 
 full_spouses <- test[relationship %in% c(2,3)][, c("qtype","ser_no"):= NULL][, problem:= 0]
-fam_re <- rbind(full_spouses, elders,same_gen, son_1, son_2, daughters_1, daughters_2, daughters_in_law, next_gen,youngs, others, fill = TRUE)
+fam_re <- rbind(full_spouses, elders,same_gen, son_1, son_2, daughters_1, daughters_2, dil, next_gen,youngs, others, fill = TRUE)
 
 
 fam_re[ edu == 88 & problem ==0, problem:= 3][, youngs := ifelse(is.na(youngs), 0, youngs)]
@@ -1269,16 +1494,100 @@ fam_super_na<- fam_super_na[ !( relationship ==2 & is.na(marstat))]
 fam_super_na[, qser_no_told_relation := qser_no_relation]
 fam_super_na[, c("kk_y_group", "ID","X","qser_no_relation"):= NULL]
 
-# write.csv(fam_super_na, "family_member_1004.csv")
+# write.csv(fam_super_na, "family_member_1111.csv")
 
 ```
 
+```{r}
+# 改1993年的 main giver, if main giver == 96
+
+t<- fam_super_na[ survey_year ==1993 & relationship %in% c(91:97)]
+dil_both<- t[ adl_who_help ==40 & iadl_who_help ==40]
+
+for( i in unique(dil_both$qser_no)){
+   if( nrow(dil_both[qser_no == i] ) > 1){
+     dil_both[ qser_no ==i, adl_who_help:=96]
+     dil_both[ qser_no ==i, iadl_who_help:=96]
+   }
+  else{
+   dil_both[ qser_no==i , adl_who_help:= relationship]
+   dil_both[ qser_no==i , iadl_who_help:= relationship]
+  }
+}
+
+dil_iadl<- t[ iadl_who_help ==40 & qser_no %nin% dil_both$qser_no]
+
+for( i in unique(dil_iadl$qser_no)){
+   if( nrow(dil_iadl[qser_no == i] ) > 1){
+     dil_iadl[ qser_no ==i, iadl_who_help:=96]
+   }
+  else{
+    dil_iadl[ qser_no==i , iadl_who_help:= relationship]
+  }
+}
+
+dil_adl<- t[ adl_who_help ==40 & qser_no %nin% dil_both$qser_no]
+
+for( i in unique(dil_adl$qser_no)){
+   if( nrow(dil_adl[qser_no == i] ) > 1){
+     dil_adl[ qser_no ==i, adl_who_help:=96]
+   }
+  else{
+    dil_adl[ qser_no==i , adl_who_help:= relationship]
+  }
+}
+
+dil_rematch <- rbind(dil_both, dil_adl, dil_iadl)
+dil_rematch<- dil_rematch[ , c("qser_no", "adl_who_help","iadl_who_help")]
+dil_rematch<- dil_rematch[ ! duplicated(dil_rematch$qser_no)]
+# check<- fam_super_na[ survey_year ==1993 & adl_who_help ==40]
+
+
+for ( i in unique(dil_rematch$qser_no)){
+   fam_super_na[ survey_year ==1993 & qser_no ==i, iadl_who_help := dil_rematch[ qser_no ==i ]$iadl_who_help ]
+   fam_super_na[ survey_year ==1993 & qser_no ==i, adl_who_help := dil_rematch[ qser_no ==i ]$adl_who_help ]
+}
+
+problem_1993_dil<- fam_super_na[ survey_year ==1993 & iadl_who_help ==40]$qser_no # 這些人是沒有回報有媳婦，但是iadl跑出媳婦的人
+
+for ( i in problem_1993_dil){
+   fam_super_na[ survey_year ==1993 & qser_no ==i, iadl_who_help :=96 ]
+}
+
+
+# j<- rbind(t[ qser_no %nin% unique(dil_rematch$qser_no)], dil_rematch)
+# fam_super_na<- rbind(fam_super_na[survey_year !=1993 | relationship %nin% c(91:97)], j)
+
+
+subject<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_1026.csv")
+subject<- as.data.table(subject)
+
+for ( i in unique(dil_rematch$qser_no)){
+   subject[ survey_year ==1993 & qser_no ==i, iadl_who_help := dil_rematch[ qser_no ==i ]$iadl_who_help ]
+   subject[ survey_year ==1993 & qser_no ==i, adl_who_help := dil_rematch[ qser_no ==i ]$adl_who_help ]
+}
+
+for ( i in problem_1993_dil){
+   subject[ survey_year ==1993 & qser_no ==i, iadl_who_help :=96 ]
+}
+
+subject[ qser_no == "B1381" & survey_year ==1993, adl_who_help :=96]
+subject[ qser_no == "B1381" & survey_year ==1993, iadl_who_help :=96]
+subject[ qser_no == "B2969" & survey_year ==1993, iadl_who_help :=96]
+
+
+subject<- subject[, X:= NULL]
+
+# write.csv(fam_super_na, "family_member_1111.csv")
+# write.csv(subject, "main_subject_1111.csv", row.names = FALSE)
+
+```
 
 ```{r}
 # check 
 
-fam_super_na<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/Archive/family_member_1005.csv")
-subject<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/Archive/main_subject_0820.csv")
+#fam_super_na<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/family_member_1111.csv")
+#subject<- read.csv("/Users/hsiao/Desktop/Projects/HRS_Chao/LTC_TSLA/main_subject_1111.csv")
 
 
 
@@ -1292,11 +1601,11 @@ subject<- as.data.table(subject)
 subject[, y_qser_no := paste(survey_year, qser_no, sep ="_")]
 fam_super_na[, y_qser_no := paste(survey_year, qser_no, sep ="_")]
 
-# nursing_house_id<- subject[dwell1 ==2]$y_qser_no
-# fam_super_na <- fam_super_na[ , subject_in_nursing_house := ifelse(y_qser_no %in% nursing_house_id , 1, 0)]
-# main_subject_residency <- subject[ ,c("y_qser_no", "crt1")]
-# fam_super_na<- main_subject_residency[ fam_super_na, on = "y_qser_no"][, X:=NULL]
-# setnames(fam_super_na, "crt1", "subject_residency")
+nursing_house_id<- subject[dwell1 ==2]$y_qser_no
+fam_super_na <- fam_super_na[ , subject_in_nursing_house := ifelse(y_qser_no %in% nursing_house_id , 1, 0)]
+main_subject_residency <- subject[ ,c("y_qser_no", "crt1")]
+fam_super_na<- main_subject_residency[ fam_super_na, on = "y_qser_no"][, X:=NULL]
+setnames(fam_super_na, "crt1", "subject_residency")
 
 fam_super_na[, having_child := ifelse(fam_super_na$children >0, 1, 0)]
 setnames(fam_super_na, "children", "number_of_children")
@@ -1335,8 +1644,9 @@ fam_super_na[, c("qser_no_told_relation","kk_group","X"):=NULL]
 setcolorder(fam_super_na, c("unif","problem", "survey_year","told_relation", "male", "age", "birthyear", "edu","work", "marstat","have_child","number_of_children" ,"livstat","livwhere","meet","tele","y_qser_no","adl_who_help","iadl_who_help","subject_residency","subject_in_nursing_house","is.spouse","is.elder","is.same_generation","is.son","is.daughter","is.grandson","is.daughter_in_law","is.other","k_group","youngs","age_missing","qser_no"))
 
 colnames(fam_super_na)
-# write.csv(fam_super_na, "family_member_1010.csv")
-# write.csv(subject, "main_subject_1010.csv")
+write.csv(fam_super_na, "family_member_1111.csv", row.names = FALSE)
+write.csv(subject, "main_subject_1111.csv", row.names = FALSE)
+
 
 
 ```

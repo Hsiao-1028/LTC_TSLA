@@ -555,6 +555,7 @@ fam_93[, c('n_major_giver' ,'n_major_i_giver', 'major_giver', 'major_i_giver', "
 # sum(jj$n_minor_giver ==1)
 # sum(jj$n_adl_giver ==1)
 
+
 ```
 
 
