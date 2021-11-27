@@ -559,7 +559,21 @@ fam_93[, c('n_major_giver' ,'n_major_i_giver', 'major_giver', 'major_i_giver', "
 ```
 
 
+```{r}
+# adjust fro relationship
 
+
+table(fam_93$relationship)
+
+fam_93[relationship ==40, relationship:= 96]
+
+test<- fam_93[ relationship == 96]
+test[, check:= paste0(ser_no, "_", relationship)]
+
+sum(duplicated(test$check))
+
+# 165 duplicated dil
+```
 
 
 

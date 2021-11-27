@@ -128,12 +128,11 @@ dt_93<- s[ dt_93, on="qser_no"]
 ```
 
 ```{r}
-dt_93[ is.na(adl_who_help), adl_who_help:=999]
-dt_93[ is.na(iadl_who_help), iadl_who_help:=999]
-table(s$iadl_who_help)
-table(dt_93$iadl_who_help)
-
-s[s$qser_no %nin% dt_93$qser_no]$qser_no # 3個應該是survey進來的typo
+# dt_93[ is.na(adl_who_help), adl_who_help:=999]
+# dt_93[ is.na(iadl_who_help), iadl_who_help:=999]
+# table(s$iadl_who_help)
+# table(dt_93$iadl_who_help)
+# s[s$qser_no %nin% dt_93$qser_no]$qser_no # 3個應該是survey進來的typo
 ```
 
 
