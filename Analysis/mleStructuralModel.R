@@ -56,7 +56,7 @@ logLik <- function(gamma, dt){
   
   lnlike <- sum(dt[, sum(utility*primaryADL)    - logSumExp(utility) , by = .(qser_no, survey_year)]$V1)
   
-  cat(lnlike, ", ")
+  #cat(lnlike, ", ")
   return(lnlike)
 }
 
