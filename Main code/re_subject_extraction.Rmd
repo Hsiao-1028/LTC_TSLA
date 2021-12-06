@@ -49,7 +49,6 @@ demo_89[, qser_no := paste0(qtype, ser_no)][, birthyear := survey_year -1911 - r
 
 ```{r}
 # 1993 年
-
 dt_93 <- data.table(df_c_93)
 dt_93 <- dt_93[, "survey_year":= 1993]
 dt_93 <- dt_93[, "marstat":= NA] # 結婚狀況=出現在codebook 但沒有檔案= = 
@@ -126,7 +125,14 @@ family<- family[ ,c("qser_no", "adl_who_help","iadl_who_help")]
 s<- family[!duplicated(family$qser_no)]
 dt_93<- s[ dt_93, on="qser_no"]
 
+```
 
+```{r}
+# dt_93[ is.na(adl_who_help), adl_who_help:=999]
+# dt_93[ is.na(iadl_who_help), iadl_who_help:=999]
+# table(s$iadl_who_help)
+# table(dt_93$iadl_who_help)
+# s[s$qser_no %nin% dt_93$qser_no]$qser_no # 3個應該是survey進來的typo
 ```
 
 
