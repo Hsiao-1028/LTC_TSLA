@@ -48,16 +48,22 @@ logLik <- function(gamma, dt){
   
   dt[, utility := gamma[1]*careDaughter + gamma[2]*careSon + gamma[3]*careDaughterInLaw + 
              gamma[4]*careInstitute + gamma[5]*careHiredCaregiver + 
-       careFamily*(gamma[6]* lnPredictedWage + gamma[7]*age + gamma[8]*(age^2) + gamma[9]*edu + gamma[10]*male + gamma[11]*unmarried) +
-       
-       careFamily        * (gamma[12]*rage +  gamma[13]*(rage^2) +  gamma[14]*rsex + gamma[15]*nADL + gamma[16]*nIADL ) +
-       careInstitute     * (gamma[17]*rage +  gamma[18]*(rage^2) +  gamma[19]*rsex + gamma[20]*nADL + gamma[21]*nIADL ) +
-       careHiredCaregiver* (gamma[22]*rage +  gamma[23]*(rage^2) +  gamma[24]*rsex + gamma[25]*nADL + gamma[26]*nIADL ) ]
+       careFamily*(gamma[6]* lnPredictedWage + gamma[7]*0.1*age + gamma[8]*0.01*(age^2) + gamma[9]*edu + gamma[10]*male + gamma[11]*unmarried) +
+       careFamily        * (gamma[12]*0.1*rage +  gamma[13]*0.01*(rage^2) +  gamma[14]*rsex + gamma[15]*nADL + gamma[16]*nIADL ) +
+       careInstitute     * (gamma[17]*0.1*rage +  gamma[18]*0.01*(rage^2) +  gamma[19]*rsex + gamma[20]*nADL + gamma[21]*nIADL ) +
+       careHiredCaregiver* (gamma[22]*0.1*rage +  gamma[23]*0.01*(rage^2) +  gamma[24]*rsex + gamma[25]*nADL + gamma[26]*nIADL ) ]
 
-  sum(dt[, sum(utility*primaryADL)    - logSumExp(utility) , by = .(qser_no, survey_year)]$V1)
+  
+  lnlike <- sum(dt[, sum(utility*primaryADL)    - logSumExp(utility) , by = .(qser_no, survey_year)]$V1)
+  
+  cat(lnlike, ", ")
+  return(lnlike)
 }
 
-gg <- maxLik(logLik, start  = rep(0,26), dt= copy(dtSample))
+
+print(Sys.time())
+gg <- maxLik(logLik, start  = rep(0,26), dt= copy(dtSample),control = list(iterlim= 1000))
+print(Sys.time())
 summary(gg)
 
 
