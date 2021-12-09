@@ -74,8 +74,30 @@ summary(gg)
 
 saveRDS(gg, "mleEstimate.rds")
 
+
+# Think about how to put spouse. Currently it's in the baseline group. 
+
+gammaEst <- runif(26)
+dt[, utility := gammaEst[1]*careDaughter + gammaEst[2]*careSon + gammaEst[3]*careDaughterInLaw + 
+     gammaEst[4]*careInstitute + gammaEst[5]*careHiredCaregiver + 
+     careFamily*(gammaEst[6]* lnPredictedWage + gammaEst[7]*0.1*age + gammaEst[8]*0.01*(age^2) + gammaEst[9]*edu + gammaEst[10]*SubSameSex + gammaEst[11]*unmarried) +
+     careFamily        * (gammaEst[12]*0.1*rage +  gammaEst[13]*0.01*(rage^2) +  gammaEst[14]*rsex + gammaEst[15]*nADL + gammaEst[16]*nIADL ) +
+     careInstitute     * (gammaEst[17]*0.1*rage +  gammaEst[18]*0.01*(rage^2) +  gammaEst[19]*rsex + gammaEst[20]*nADL + gammaEst[21]*nIADL ) +
+     careHiredCaregiver* (gammaEst[22]*0.1*rage +  gammaEst[23]*0.01*(rage^2) +  gammaEst[24]*rsex + gammaEst[25]*nADL + gammaEst[26]*nIADL ) ]
+
+
+dt[, denominator := logSumExp(utility), by = .(qser_no, survey_year)]
+dt[, probEst :=  exp(utility - denominator)]
+
+
 #logLik(c(-345.86588, -203.45051,-1912.43483,50.86263,447.59113), dt)
 
+## Marginal Effects -----
+dt[primaryADL==1 & relCate == "Son", mean(probEst*(1-probEst))] * gammaEst
+dt[primaryADL==1 & relCate == "Daughter", mean(probEst*(1-probEst))] * gammaEst
+dt[primaryADL==1 & relCate == "Daughter-In-Law", mean(probEst*(1-probEst))] * gammaEst
+dt[primaryADL==1 & relCate == "HiredCaregiver", mean(probEst*(1-probEst))] * gammaEst
+dt[primaryADL==1 & relCate == "Institute", mean(probEst*(1-probEst))] * gammaEst
 
 #head(sort(table(dtSample[,paste0(sort(relCate),collapse = " ") , by = qser_no]), decreasing = TRUE))
 
