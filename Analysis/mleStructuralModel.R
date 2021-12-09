@@ -72,5 +72,12 @@ print(Sys.time())
 
 summary(gg)
 
+saveRDS(gg, "mleEstimate.rds")
 
-logLik(c(-345.86588, -203.45051,-1912.43483,50.86263,447.59113), dt)
+#logLik(c(-345.86588, -203.45051,-1912.43483,50.86263,447.59113), dt)
+
+
+#head(sort(table(dtSample[,paste0(sort(relCate),collapse = " ") , by = qser_no]), decreasing = TRUE))
+
+
+#sort(c(1,3,5,2,0),decreasing = TRUE)
