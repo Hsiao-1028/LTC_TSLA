@@ -48,7 +48,7 @@ logLik <- function(gamma, dt){
   
   dt[, utility := gamma[1]*careDaughter + gamma[2]*careSon + gamma[3]*careDaughterInLaw + 
              gamma[4]*careInstitute + gamma[5]*careHiredCaregiver + 
-       careFamily*(gamma[6]* lnPredictedWage + gamma[7]*0.1*age + gamma[8]*0.01*(age^2) + gamma[9]*edu + gamma[10]*male + gamma[11]*unmarried) +
+       careFamily*(gamma[6]* lnPredictedWage + gamma[7]*0.1*age + gamma[8]*0.01*(age^2) + gamma[9]*edu + gamma[10]*SubSameSex + gamma[11]*unmarried) +
        careFamily        * (gamma[12]*0.1*rage +  gamma[13]*0.01*(rage^2) +  gamma[14]*rsex + gamma[15]*nADL + gamma[16]*nIADL ) +
        careInstitute     * (gamma[17]*0.1*rage +  gamma[18]*0.01*(rage^2) +  gamma[19]*rsex + gamma[20]*nADL + gamma[21]*nIADL ) +
        careHiredCaregiver* (gamma[22]*0.1*rage +  gamma[23]*0.01*(rage^2) +  gamma[24]*rsex + gamma[25]*nADL + gamma[26]*nIADL ) ]
@@ -63,7 +63,13 @@ logLik <- function(gamma, dt){
 
 print(Sys.time())
 gg <- maxLik(logLik, start  = rep(0,26), dt= copy(dtSample),control = list(iterlim= 1000))
+# gg <- maxLik(logLik, start  = c(-23.17213,-781.757,109.7304,52.79335,255.1432,-191.503,122.121,-12.38107,
+#                                 12.30895,817.4588,-12.37746,-283.3043,-97.09345,100.8297,315.1771,153.6512,
+#                                 -442.5574,-86.7559,119.8829,315.9471,153.2705,-499.5803,-82.89013,128.1817,316.6188,152.5982)
+#              , dt= copy(dtSample),control = list(iterlim= 1000))
 print(Sys.time())
+
+
 summary(gg)
 
 
